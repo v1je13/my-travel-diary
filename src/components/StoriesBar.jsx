@@ -283,4 +283,4 @@ export default React.memo(function StoriesBar({
       </div>
     </div>
   );
-}
+});
