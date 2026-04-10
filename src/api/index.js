@@ -1,62 +1,113 @@
 // Для VK Mini App используем Vercel API proxy чтобы избежать CORS проблем
-// API запросы идут через тот же домен что и фронтенд
 const API_URL =
   import.meta.env.VITE_API_URL ||
   (typeof window !== "undefined" &&
   window.location.hostname.includes("vercel.app")
     ? "" // используем относительный путь для Vercel proxy
     : "https://traveldiary-api.traveldiary-api.workers.dev");
+
+// Кэш для данных
+const dataCache = {
+  stories: null,
+  posts: null,
+  comments: {},
+  lastFetch: { stories: 0, posts: 0 },
+};
+
+// Флаг доступности API (проверяем один раз асинхронно)
 let apiAvailable = null;
+let apiCheckPromise = null;
 
-async function checkApi() {
-  if (apiAvailable !== null) return apiAvailable;
-  try {
-    console.log("🔍 API Check: Проверяем доступность API...", API_URL);
+function checkApi() {
+  if (apiAvailable !== null) return Promise.resolve(apiAvailable);
+  if (apiCheckPromise) return apiCheckPromise;
+
+  apiCheckPromise = new Promise((resolve) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // Уменьшили с 5000 до 2000
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
 
-    const res = await fetch(`${API_URL}/api/health`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    apiAvailable = res.ok;
-    console.log("✅ API Check result:", apiAvailable, "Status:", res.status);
-  } catch (e) {
-    console.error("❌ API check failed:", e.message, e);
-    apiAvailable = false;
+    fetch(`${API_URL}/api/health`, { signal: controller.signal })
+      .then((res) => {
+        clearTimeout(timeoutId);
+        apiAvailable = res.ok;
+        resolve(apiAvailable);
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        apiAvailable = false;
+        resolve(false);
+      });
+  });
+
+  return apiCheckPromise;
+}
+
+// Запускаем проверку API в фоне сразу
+checkApi();
+
+function getFromStorage(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
   }
-  return apiAvailable;
 }
 
 // === Stories ===
-export async function getStories() {
-  if (await checkApi()) {
+export async function getStories(forceRefresh = false) {
+  const now = Date.now();
+
+  // Возвращаем кэш если есть и не требуется обновление
+  if (
+    !forceRefresh &&
+    dataCache.stories &&
+    now - dataCache.lastFetch.stories < 60000
+  ) {
+    return dataCache.stories;
+  }
+
+  // Пробуем API если доступен
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const res = await fetch(`${API_URL}/api/stories`);
-      return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        dataCache.stories = data;
+        dataCache.lastFetch.stories = now;
+        return data;
+      }
     } catch (e) {
-      console.warn("API unavailable, using localStorage");
+      console.warn("API stories fetch failed");
     }
   }
-  return JSON.parse(localStorage.getItem("travelDiaryStories") || "[]");
+
+  // Fallback на localStorage
+  const localData = getFromStorage("travelDiaryStories");
+  dataCache.stories = localData;
+  dataCache.lastFetch.stories = now;
+  return localData;
 }
 
-export async function saveStory(story) {
-  // Сначала сохраняем в localStorage (мгновенно)
-  const localSaved = JSON.parse(
-    localStorage.getItem("travelDiaryStories") || "[]",
-  );
+export function saveStory(story) {
+  // Мгновенно сохраняем в localStorage
+  const localSaved = getFromStorage("travelDiaryStories");
   localSaved.push(story);
   localStorage.setItem("travelDiaryStories", JSON.stringify(localSaved));
 
-  // В фоне отправляем в API (не блокируем)
-  checkApi().then((apiAvailable) => {
-    if (apiAvailable) {
+  // Обновляем кэш
+  if (dataCache.stories) {
+    dataCache.stories.push(story);
+  }
+
+  // В фоне отправляем в API (не ждём!)
+  checkApi().then((apiOk) => {
+    if (apiOk) {
       fetch(`${API_URL}/api/stories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(story),
-      }).catch((e) => console.warn("API save story failed:", e));
+      }).catch(() => {});
     }
   });
 
@@ -64,99 +115,133 @@ export async function saveStory(story) {
 }
 
 export async function markStoryViewed(id) {
-  if (await checkApi()) {
-    try {
-      await fetch(`${API_URL}/api/stories/${id}`, { method: "PUT" });
-    } catch (e) {}
+  const apiOk = await checkApi();
+  if (apiOk) {
+    fetch(`${API_URL}/api/stories/${id}`, { method: "PUT" }).catch(() => {});
   }
 }
 
-export async function deleteStory(id) {
-  if (await checkApi()) {
-    try {
-      const res = await fetch(`${API_URL}/api/stories/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) return true;
-    } catch (e) {
-      console.warn("API delete failed, using localStorage");
-    }
-  }
-
-  // Fallback: delete from localStorage
-  const stories = JSON.parse(
-    localStorage.getItem("travelDiaryStories") || "[]",
-  );
+export function deleteStory(id) {
+  // Мгновенно удаляем из localStorage
+  const stories = getFromStorage("travelDiaryStories");
   const filtered = stories.filter((s) => s.id !== id);
   localStorage.setItem("travelDiaryStories", JSON.stringify(filtered));
+
+  // Обновляем кэш
+  if (dataCache.stories) {
+    dataCache.stories = dataCache.stories.filter((s) => s.id !== id);
+  }
+
+  // В фоне удаляем из API
+  checkApi().then((apiOk) => {
+    if (apiOk) {
+      fetch(`${API_URL}/api/stories/${id}`, { method: "DELETE" }).catch(
+        () => {},
+      );
+    }
+  });
+
   return true;
 }
 
 // === Posts ===
-export async function getPosts() {
-  if (await checkApi()) {
+export async function getPosts(forceRefresh = false) {
+  const now = Date.now();
+
+  if (
+    !forceRefresh &&
+    dataCache.posts &&
+    now - dataCache.lastFetch.posts < 60000
+  ) {
+    return dataCache.posts;
+  }
+
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const res = await fetch(`${API_URL}/api/posts`);
-      return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        dataCache.posts = data;
+        dataCache.lastFetch.posts = now;
+        return data;
+      }
     } catch (e) {
-      console.warn("API unavailable, using localStorage");
+      console.warn("API posts fetch failed");
     }
   }
-  return JSON.parse(localStorage.getItem("travelDiaryFeedPosts") || "[]");
+
+  const localData = getFromStorage("travelDiaryFeedPosts");
+  dataCache.posts = localData;
+  dataCache.lastFetch.posts = now;
+  return localData;
 }
 
 export async function getPostComments(postId) {
-  if (await checkApi()) {
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const res = await fetch(`${API_URL}/api/posts/${postId}/comments`);
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        dataCache.comments[postId] = data;
+        return data;
+      }
     } catch (e) {}
   }
-  // Fallback: from localStorage
-  const all = JSON.parse(localStorage.getItem("travelDiaryComments") || "[]");
-  return all.filter((c) => c.postId === postId);
+
+  if (dataCache.comments[postId]) return dataCache.comments[postId];
+
+  const all = getFromStorage("travelDiaryComments");
+  const filtered = all.filter((c) => c.postId === postId);
+  dataCache.comments[postId] = filtered;
+  return filtered;
 }
 
-export async function addComment(comment) {
-  const localAll = JSON.parse(
-    localStorage.getItem("travelDiaryComments") || "[]",
-  );
+export function addComment(comment) {
+  const saved = { ...comment, id: Date.now() };
+  const localAll = getFromStorage("travelDiaryComments");
+  localAll.unshift(saved);
+  localStorage.setItem("travelDiaryComments", JSON.stringify(localAll));
 
-  if (await checkApi()) {
-    try {
-      const res = await fetch(`${API_URL}/api/comments`, {
+  // Обновляем кэш
+  if (dataCache.comments[comment.postId]) {
+    dataCache.comments[comment.postId].unshift(saved);
+  }
+
+  // В фоне отправляем в API
+  checkApi().then((apiOk) => {
+    if (apiOk) {
+      fetch(`${API_URL}/api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(comment),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("API comment save failed, using localStorage");
+      }).catch(() => {});
     }
-  }
+  });
 
-  const saved = { ...comment, id: Date.now() };
-  localAll.unshift(saved);
-  localStorage.setItem("travelDiaryComments", JSON.stringify(localAll));
   return saved;
 }
 
-export async function savePost(post) {
-  // Сначала сохраняем в localStorage (мгновенно)
-  const localPosts = JSON.parse(
-    localStorage.getItem("travelDiaryFeedPosts") || "[]",
-  );
+export function savePost(post) {
+  // Мгновенно в localStorage
+  const localPosts = getFromStorage("travelDiaryFeedPosts");
   localPosts.unshift(post);
   localStorage.setItem("travelDiaryFeedPosts", JSON.stringify(localPosts));
 
-  // В фоне отправляем в API (не блокируем)
-  checkApi().then((apiAvailable) => {
-    if (apiAvailable) {
+  // Обновляем кэш
+  if (dataCache.posts) {
+    dataCache.posts.unshift(post);
+  }
+
+  // В фоне в API
+  checkApi().then((apiOk) => {
+    if (apiOk) {
       fetch(`${API_URL}/api/posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
-      }).catch((e) => console.warn("API save failed:", e));
+      }).catch(() => {});
     }
   });
 
@@ -164,7 +249,8 @@ export async function savePost(post) {
 }
 
 export async function likePost(id, userId) {
-  if (await checkApi()) {
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const res = await fetch(`${API_URL}/api/posts/${id}/like`, {
         method: "PUT",
@@ -179,22 +265,21 @@ export async function likePost(id, userId) {
 
 // === Search ===
 export async function searchPosts(query, id) {
-  if (await checkApi()) {
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (id) params.set("id", id);
       const res = await fetch(`${API_URL}/api/search?${params}`);
-      return await res.json();
+      if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("API search failed, using localStorage");
+      console.warn("API search failed");
     }
   }
 
-  // Fallback: search in localStorage
-  const posts = JSON.parse(
-    localStorage.getItem("travelDiaryFeedPosts") || "[]",
-  );
+  // Fallback на localStorage
+  const posts = dataCache.posts || getFromStorage("travelDiaryFeedPosts");
   if (id) {
     return posts.filter((p) => p.id === parseInt(id));
   }
@@ -210,19 +295,18 @@ export async function searchPosts(query, id) {
 }
 
 export async function getPostById(id) {
-  if (await checkApi()) {
+  const apiOk = await checkApi();
+  if (apiOk) {
     try {
       const res = await fetch(`${API_URL}/api/posts/${id}`);
       if (res.ok) return await res.json();
     } catch (e) {}
   }
 
-  const posts = JSON.parse(
-    localStorage.getItem("travelDiaryFeedPosts") || "[]",
-  );
+  const posts = dataCache.posts || getFromStorage("travelDiaryFeedPosts");
   return posts.find((p) => p.id === parseInt(id)) || null;
 }
 
-export async function checkHealth() {
+export function checkHealth() {
   return checkApi();
 }
