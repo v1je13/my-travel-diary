@@ -13,7 +13,7 @@ import {
   Select,
   Snackbar,
 } from "@vkontakte/vkui";
-
+import { Icon28CheckCircleOutline } from "@vkontakte/icons";
 
 export default function AddTravel({ nav, onBack, onSave }) {
   const [formData, setFormData] = useState({
@@ -22,103 +22,127 @@ export default function AddTravel({ nav, onBack, onSave }) {
     country: "",
     startDate: new Date(),
     endDate: new Date(),
-    rating: "4",
+    rating: "",
     description: "",
   });
   const [snackbar, setSnackbar] = useState(null);
 
   const handleSave = () => {
-    // Здесь логика сохранения
+    if (!formData.hotelName.trim()) return;
     onSave(formData);
     setSnackbar(
       <Snackbar
         onClose={() => setSnackbar(null)}
-        before={<Icon28CheckCircleOutline fill="var(--vkui--color_icon_positive)" />}
+        before={
+          <Icon28CheckCircleOutline fill="var(--vkui--color_icon_positive)" />
+        }
       >
         Путешествие добавлено!
-      </Snackbar>
+      </Snackbar>,
     );
     setTimeout(() => onBack(), 1500);
   };
 
   return (
-    <Panel nav={nav}>
-      <PanelHeader before={<Button mode="tertiary" onClick={onBack}>Отмена</Button>}>
+    <Panel nav={nav} style={{ background: "#f5f0e8" }}>
+      <PanelHeader
+        before={
+          <Button mode="tertiary" onClick={onBack}>
+            Отмена
+          </Button>
+        }
+      >
         Новое путешествие
       </PanelHeader>
 
-      <FormLayout>
-        <FormItem top="Название отеля" required>
-          <Input
-            value={formData.hotelName}
-            onChange={(e) => setFormData({ ...formData, hotelName: e.target.value })}
-            placeholder="Например: Grand Hotel"
-          />
-        </FormItem>
-
-        <FormItem top="Город">
-          <Input
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            placeholder="Город"
-          />
-        </FormItem>
-
-        <FormItem top="Страна">
-          <Input
-            value={formData.country}
-            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            placeholder="Страна"
-          />
-        </FormItem>
-
-        <FormItem top="Даты поездки">
-          <div style={{ display: "flex", gap: 8 }}>
-            <DatePicker
-              min={{ day: 1, month: 1, year: 2020 }}
-              max={{ day: 31, month: 12, year: 2030 }}
-              value={formData.startDate}
-              onChange={(value) => setFormData({ ...formData, startDate: value })}
+      <Group>
+        <FormLayout>
+          <FormItem top="Название отеля" required>
+            <Input
+              value={formData.hotelName}
+              onChange={(e) =>
+                setFormData({ ...formData, hotelName: e.target.value })
+              }
+              placeholder="Например: Grand Hotel"
             />
-            <span style={{ alignSelf: "center" }}>—</span>
-            <DatePicker
-              min={{ day: 1, month: 1, year: 2020 }}
-              max={{ day: 31, month: 12, year: 2030 }}
-              value={formData.endDate}
-              onChange={(value) => setFormData({ ...formData, endDate: value })}
+          </FormItem>
+
+          <FormItem top="Город">
+            <Input
+              value={formData.city}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
+              placeholder="Город"
             />
-          </div>
-        </FormItem>
+          </FormItem>
 
-        <FormItem top="Рейтинг">
-          <Select
-            value={formData.rating}
-            onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
-            options={[
-              { label: "⭐ 5", value: "5" },
-              { label: "⭐ 4", value: "4" },
-              { label: "⭐ 3", value: "3" },
-              { label: "⭐ 2", value: "2" },
-              { label: "⭐ 1", value: "1" },
-            ]}
-          />
-        </FormItem>
+          <FormItem top="Страна">
+            <Input
+              value={formData.country}
+              onChange={(e) =>
+                setFormData({ ...formData, country: e.target.value })
+              }
+              placeholder="Страна"
+            />
+          </FormItem>
 
-        <FormItem top="Описание">
-          <Textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Поделитесь впечатлениями..."
-            rows={4}
-          />
-        </FormItem>
+          <FormItem top="Даты поездки">
+            <div style={{ display: "flex", gap: 8 }}>
+              <DatePicker
+                min={{ day: 1, month: 1, year: 2020 }}
+                max={{ day: 31, month: 12, year: 2030 }}
+                value={formData.startDate}
+                onChange={(value) =>
+                  setFormData({ ...formData, startDate: value })
+                }
+              />
+              <span style={{ alignSelf: "center" }}>—</span>
+              <DatePicker
+                min={{ day: 1, month: 1, year: 2020 }}
+                max={{ day: 31, month: 12, year: 2030 }}
+                value={formData.endDate}
+                onChange={(value) =>
+                  setFormData({ ...formData, endDate: value })
+                }
+              />
+            </div>
+          </FormItem>
 
-        <FormItem>
-          <Button size="l" stretched onClick={handleSave}>
-            Сохранить
-          </Button>
-        </FormItem>
-      </FormLayout>
+          <FormItem top="Рейтинг">
+            <Select
+              value={formData.rating}
+              onChange={(e) =>
+                setFormData({ ...formData, rating: e.target.value })
+              }
+              options={[
+                { label: "⭐ 5", value: "5" },
+                { label: "⭐ 4", value: "4" },
+                { label: "⭐ 3", value: "3" },
+                { label: "⭐ 2", value: "2" },
+                { label: "⭐ 1", value: "1" },
+              ]}
+            />
+          </FormItem>
+
+          <FormItem top="Описание">
+            <Textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Поделитесь впечатлениями..."
+              rows={4}
+            />
+          </FormItem>
+
+          <FormItem>
+            <Button size="l" stretched onClick={handleSave}>
+              Сохранить
+            </Button>
+          </FormItem>
+        </FormLayout>
+      </Group>
 
       {snackbar}
     </Panel>

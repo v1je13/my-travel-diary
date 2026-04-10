@@ -7,89 +7,51 @@ import {
   Div,
   Title,
   Text,
-  Button,
   Header,
-  CellButton,
   SimpleCell,
   Counter,
   Placeholder,
+  Button,
+  Input,
 } from "@vkontakte/vkui";
 import { useVKUser } from "../hooks/useVKUser";
+import { getCurrentUser, setCurrentUserNames } from "../components/StoriesBar";
 import TravelCard from "../components/TravelCard";
-import Loader from "../components/Loader";
 
 export default function Profile({ nav, onOpenTravel }) {
   const { user, loading: userLoading, error } = useVKUser();
-  const [travels, setTravels] = useState([]);
-  const [travelsLoading, setTravelsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0,
-    countries: 0,
-    days: 0,
-  });
+  const [editingName, setEditingName] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const travels = [];
+  const stats = { total: 0, countries: 0, days: 0 };
 
   useEffect(() => {
-    setTimeout(() => {
-      const mockTravels = [
-        {
-          id: 1,
-          hotelName: "Grand Hotel Europe",
-          city: "Санкт-Петербург",
-          country: "Россия",
-          startDate: "2024-06-15",
-          endDate: "2024-06-20",
-          rating: 4.8,
-          description: "Прекрасный отель в центре города. Отличный сервис, вкусные завтраки.",
-          image: "https://via.placeholder.com/300x200?text=Grand+Hotel",
-          price: "от 8500 ₽",
-          review: "Очень понравилось! Обязательно вернусь сюда ещё раз.",
-        },
-        {
-          id: 2,
-          hotelName: "Mountain View Resort",
-          city: "Сочи",
-          country: "Россия",
-          startDate: "2024-07-10",
-          endDate: "2024-07-17",
-          rating: 4.6,
-          description: "Уютный отель с видом на горы. Свежий воздух, бассейн.",
-          image: "https://via.placeholder.com/300x200?text=Mountain+View",
-          price: "от 12000 ₽",
-          review: "Отличный отдых! Природа шикарная, персонал приветливый.",
-        },
-        {
-          id: 3,
-          hotelName: "Seaside Paradise",
-          city: "Анталья",
-          country: "Турция",
-          startDate: "2024-08-05",
-          endDate: "2024-08-15",
-          rating: 4.9,
-          description: "Шикарный пляжный отель. Всё включено, анимация.",
-          image: "https://via.placeholder.com/300x200?text=Seaside+Paradise",
-          price: "от 15000 ₽",
-          review: "Лучший отдых! Обязательно приеду ещё.",
-        },
-      ];
-      
-      setTravels(mockTravels);
-      setStats({
-        total: mockTravels.length,
-        countries: [...new Set(mockTravels.map(t => t.country))].length,
-        days: mockTravels.reduce((sum, t) => {
-          const days = Math.ceil((new Date(t.endDate) - new Date(t.startDate)) / (1000 * 60 * 60 * 24));
-          return sum + days;
-        }, 0),
-      });
-      setTravelsLoading(false);
-    }, 500);
-  }, []);
+    const vkFirst = user?.first_name || user?.firstName;
+    const vkLast = user?.last_name || user?.lastName;
+    if (vkFirst) {
+      setFirstName(vkFirst);
+      setLastName(vkLast || "");
+      setCurrentUserNames(vkFirst, vkLast || "");
+    } else {
+      const local = getCurrentUser();
+      setFirstName(local.firstName);
+      setLastName(local.lastName);
+    }
+  }, [user]);
 
-  if (userLoading || travelsLoading) {
+  const handleSaveName = () => {
+    if (firstName.trim() && lastName.trim()) {
+      setCurrentUserNames(firstName.trim(), lastName.trim());
+    }
+    setEditingName(false);
+  };
+
+  if (userLoading) {
     return (
       <Panel nav={nav}>
         <PanelHeader>Профиль</PanelHeader>
-        <Loader />
+        <Placeholder>Загрузка...</Placeholder>
       </Panel>
     );
   }
@@ -101,7 +63,9 @@ export default function Profile({ nav, onOpenTravel }) {
         <Group>
           <Placeholder
             header="Ошибка загрузки"
-            action={<Button onClick={() => window.location.reload()}>Обновить</Button>}
+            action={
+              <Button onClick={() => window.location.reload()}>Обновить</Button>
+            }
           >
             Не удалось загрузить данные пользователя
           </Placeholder>
@@ -111,31 +75,79 @@ export default function Profile({ nav, onOpenTravel }) {
   }
 
   return (
-    <Panel nav={nav}>
+    <Panel nav={nav} style={{ background: "#f5f0e8" }}>
       <PanelHeader>Профиль</PanelHeader>
 
       <Group>
         <Div>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 16 }}
+          >
             <Avatar size={80} src={user?.photo_200} />
-            <div style={{ marginLeft: 16 }}>
-              <Title level="2">
-                {user?.first_name} {user?.last_name}
-              </Title>
-              <Text style={{ color: "var(--vkui--color_text_secondary)" }}>
+            <div style={{ marginLeft: 16, flex: 1 }}>
+              {editingName ? (
+                <div>
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Имя"
+                    style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}
+                  />
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Фамилия"
+                    style={{ fontSize: 18, fontWeight: 600 }}
+                  />
+                  <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                    <Button size="s" mode="primary" onClick={handleSaveName}>
+                      Сохранить
+                    </Button>
+                    <Button
+                      size="s"
+                      mode="secondary"
+                      onClick={() => setEditingName(false)}
+                    >
+                      Отмена
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Title level="2">
+                    {firstName} {lastName}
+                  </Title>
+                  <Button
+                    size="s"
+                    mode="tertiary"
+                    onClick={() => setEditingName(true)}
+                    style={{ padding: 0, marginTop: 4 }}
+                  >
+                    Изменить имя
+                  </Button>
+                </>
+              )}
+              <Text
+                style={{
+                  color: "var(--vkui--color_text_secondary)",
+                  marginTop: 4,
+                }}
+              >
                 ID: {user?.id}
               </Text>
             </div>
           </div>
-          
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-around", 
-            marginTop: 16, 
-            padding: "12px 0", 
-            background: "var(--vkui--color_background_secondary)", 
-            borderRadius: 12 
-          }}>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              marginTop: 16,
+              padding: "12px 0",
+              background: "var(--vkui--color_background_secondary)",
+              borderRadius: 12,
+            }}
+          >
             <div style={{ textAlign: "center" }}>
               <Title level="3">{stats.total}</Title>
               <Text style={{ fontSize: 13 }}>Путешествий</Text>
@@ -153,13 +165,10 @@ export default function Profile({ nav, onOpenTravel }) {
       </Group>
 
       <Group header={<Header mode="secondary">Действия</Header>}>
-        <CellButton onClick={() => console.log("Добавить путешествие")}>
-          ➕ Добавить путешествие
-        </CellButton>
-        <SimpleCell indicator={<Counter mode="prominent">3</Counter>}>
+        <SimpleCell indicator={<Counter mode="prominent">0</Counter>}>
           📚 Избранные отели
         </SimpleCell>
-        <SimpleCell>
+        <SimpleCell indicator={<Counter mode="prominent">0</Counter>}>
           👍 Мои отзывы
         </SimpleCell>
       </Group>
@@ -167,18 +176,14 @@ export default function Profile({ nav, onOpenTravel }) {
       <Group header={<Header mode="secondary">Мои путешествия</Header>}>
         <Div>
           {travels.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ fontSize: 48 }}>✈️</div>
-              <Text style={{ marginTop: 12 }}>Пока нет путешествий</Text>
-              <Button mode="tertiary" style={{ marginTop: 12 }} onClick={() => console.log("Добавить")}>
-                Добавить первое путешествие
-              </Button>
-            </div>
+            <Placeholder header="Нет путешествий">
+              Добавьте своё первое путешествие!
+            </Placeholder>
           ) : (
-            travels.map(travel => (
-              <TravelCard 
-                key={travel.id} 
-                travel={travel} 
+            travels.map((travel) => (
+              <TravelCard
+                key={travel.id}
+                travel={travel}
                 onClick={() => onOpenTravel(travel)}
               />
             ))

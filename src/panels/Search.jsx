@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Panel,
   PanelHeader,
-  Search,
+  Search as VKSearch,
   Group,
   Placeholder,
   Div,
@@ -12,117 +12,117 @@ import {
   Avatar,
   Button,
 } from "@vkontakte/vkui";
+import { searchPosts, getPostById } from "../api";
 import Loader from "../components/Loader";
 
-const mockHotels = [
-  {
-    id: 1,
-    name: "Grand Hotel Europe",
-    city: "Санкт-Петербург",
-    country: "Россия",
-    rating: 4.8,
-    price: "от 8500 ₽",
-    image: "https://via.placeholder.com/48",
-  },
-  {
-    id: 2,
-    name: "Mountain View Resort",
-    city: "Сочи",
-    country: "Россия",
-    rating: 4.6,
-    price: "от 12000 ₽",
-    image: "https://via.placeholder.com/48",
-  },
-  {
-    id: 3,
-    name: "Seaside Paradise",
-    city: "Анталья",
-    country: "Турция",
-    rating: 4.9,
-    price: "от 15000 ₽",
-    image: "https://via.placeholder.com/48",
-  },
-];
-
-export default function SearchPanel({ nav }) {
+export default function SearchPanel({ nav, onOpenPost }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
-  const handleSearch = (value) => {
+  const handleSearch = async (value) => {
     setQuery(value);
+    if (!value.trim()) {
+      setResults([]);
+      return;
+    }
+
     setLoading(true);
-    
-    setTimeout(() => {
-      const filtered = mockHotels.filter(hotel =>
-        hotel.name.toLowerCase().includes(value.toLowerCase()) ||
-        hotel.city.toLowerCase().includes(value.toLowerCase())
-      );
-      setResults(filtered);
-      setLoading(false);
-    }, 300);
+    const isNumeric = /^\d+$/.test(value.trim());
+    const found = await searchPosts(value, isNumeric ? value : null);
+    setResults(found);
+    setLoading(false);
   };
 
   return (
-    <Panel nav={nav}>
-      <PanelHeader>Поиск отелей</PanelHeader>
+    <Panel nav={nav} style={{ background: "#f5f0e8" }}>
+      <PanelHeader>Поиск</PanelHeader>
       <Group>
-        <Search
+        <VKSearch
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Введите название отеля или город"
+          placeholder="Введите ID поста или текст..."
         />
       </Group>
-      
+
       {loading && <Loader />}
-      
+
       {!loading && query && results.length === 0 && (
-        <Placeholder
-          header="Ничего не найдено"
-          action={<Button onClick={() => setQuery("")}>Очистить поиск</Button>}
-        >
-          🔍 Попробуйте изменить запрос
+        <Placeholder header="Ничего не найдено">
+          🔍 Попробуйте изменить запрос или проверить ID
         </Placeholder>
       )}
-      
+
       {!loading && !query && (
-        <Placeholder header="Начните поиск">
-          🔍 Введите название отеля или города
+        <Placeholder header="Поиск постов">
+          🔍 Введите ID поста для поиска или текст
         </Placeholder>
       )}
-      
+
       {!loading && results.length > 0 && (
         <Group>
           <Div>
-            <Text style={{ marginBottom: 12, color: "var(--vkui--color_text_secondary)" }}>
-              Найдено {results.length} отелей
+            <Text
+              style={{
+                marginBottom: 12,
+                color: "var(--vkui--color_text_secondary)",
+              }}
+            >
+              Найдено: {results.length}
             </Text>
-            {results.map(hotel => (
-              <Card key={hotel.id} mode="shadow" style={{ marginBottom: 12 }}>
+            {results.map((post) => (
+              <Card
+                key={post.id}
+                mode="shadow"
+                style={{ marginBottom: 12, cursor: "pointer" }}
+                onClick={() => onOpenPost?.(post)}
+              >
                 <div style={{ padding: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                    <Avatar size={48} src={hotel.image} />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Avatar size={48} src={post.avatar} />
                     <div style={{ marginLeft: 12, flex: 1 }}>
                       <Title level="3" style={{ marginBottom: 4 }}>
-                        {hotel.name}
+                        {post.author}
                       </Title>
-                      <Text style={{ color: "var(--vkui--color_text_secondary)" }}>
-                        📍 {hotel.city}, {hotel.country}
+                      <Text
+                        style={{
+                          color: "var(--vkui--color_text_secondary)",
+                          fontSize: 12,
+                        }}
+                      >
+                        #{post.id} • {post.date}
                       </Text>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <span>⭐</span>
-                      <Text>{hotel.rating}</Text>
-                    </div>
                   </div>
-                  
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={{ fontWeight: "bold", color: "var(--vkui--color_text_accent)" }}>
-                      {hotel.price}
+                  {post.text && (
+                    <Text style={{ marginBottom: 8, lineHeight: 1.4 }}>
+                      {post.text.slice(0, 100)}...
                     </Text>
-                    <Button size="m" mode="tertiary">
-                      Подробнее
-                    </Button>
+                  )}
+                  {post.image && !post.video && (
+                    <img
+                      src={post.image}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        borderRadius: 8,
+                        maxHeight: 200,
+                        objectFit: "cover",
+                        marginBottom: 8,
+                      }}
+                    />
+                  )}
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <Text style={{ fontSize: 12 }}>❤️ {post.likes || 0}</Text>
+                    <Text style={{ fontSize: 12 }}>
+                      💬 {post.comments || 0}
+                    </Text>
                   </div>
                 </div>
               </Card>

@@ -1,0 +1,53 @@
+/* Beige background everywhere */
+:root {
+    --bg-color: #f5f0e8;
+}
+
+html,
+body,
+#root,
+.vkui__root,
+.vkuiConfigProvider,
+.vkuiAppRoot,
+.vkuiEpic,
+.vkuiEpic__in,
+.vkuiView,
+.vkuiView__content,
+.vkuiPanel,
+.vkuiPanel__in,
+.vkuiPanelHeader,
+.vkuiPanelHeader__bg,
+.vkuiGroup,
+.vkuiGroup__container,
+.vkuiPullToRefresh,
+.vkuiPullToRefresh__content,
+.vkuiSearch,
+.vkuiSearch__content,
+.vkuiModalRoot,
+.vkuiModalRoot__out,
+.vkuiModalPage,
+.vkuiModalPage__in {
+    background-color: #f5f0e8 !important;
+}
+
+/* Override dark theme */
+.vkui--colors-dark {
+    background-color: #f5f0e8 !important;
+}
+
+.vkui--colors-dark .vkuiEpic,
+.vkui--colors-dark .vkuiView,
+.vkui--colors-dark .vkuiView__content,
+.vkui--colors-dark .vkuiPanel,
+.vkui--colors-dark .vkuiPanelHeader,
+.vkui--colors-dark .vkuiGroup,
+.vkui--colors-dark .vkuiGroup__container {
+    background-color: #f5f0e8 !important;
+}
+
+/* Card and content elements */
+.vkuiCard,
+.vkuiCard__md,
+.vkuiCell {
+    background-color: #f5f0e8 !important;
+}

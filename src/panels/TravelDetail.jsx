@@ -15,7 +15,11 @@ export default function TravelDetail({ nav, travel, onBack }) {
   const formatDate = (dateString) => {
     if (!dateString) return "Дата не указана";
     const date = new Date(dateString);
-    return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+    return date.toLocaleDateString("ru-RU", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const calculateDays = (start, end) => {
@@ -43,8 +47,8 @@ export default function TravelDetail({ nav, travel, onBack }) {
   const daysCount = calculateDays(travel.startDate, travel.endDate);
 
   return (
-    <Panel nav={nav}>
-      <PanelHeader 
+    <Panel nav={nav} style={{ background: "#f5f0e8" }}>
+      <PanelHeader
         before={
           <Button mode="tertiary" onClick={onBack}>
             ← Назад
@@ -57,71 +61,74 @@ export default function TravelDetail({ nav, travel, onBack }) {
       <Group>
         <Div>
           {travel.image && (
-            <img 
-              src={travel.image} 
+            <img
+              src={travel.image}
               alt={travel.hotelName}
-              style={{ 
-                width: "100%", 
-                height: 200, 
-                objectFit: "cover", 
+              style={{
+                width: "100%",
+                height: 200,
+                objectFit: "cover",
                 borderRadius: 12,
-                marginBottom: 16
+                marginBottom: 16,
               }}
             />
           )}
-          
+
           <Title level="1" style={{ marginBottom: 8 }}>
             {travel.hotelName}
           </Title>
-          
+
           <SimpleCell>
             📍 {travel.city}, {travel.country}
           </SimpleCell>
-          
+
           {travel.startDate && travel.endDate && (
             <SimpleCell>
               📅 {formatDate(travel.startDate)} — {formatDate(travel.endDate)}
-              <Text style={{ fontSize: 13, color: "var(--vkui--color_text_secondary)" }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "var(--vkui--color_text_secondary)",
+                }}
+              >
                 ({daysCount} {getDaysWord(daysCount)})
               </Text>
             </SimpleCell>
           )}
-          
-          <SimpleCell>
-            ⭐ Рейтинг: {travel.rating || 4.5} / 5
-          </SimpleCell>
+
+          {travel.rating && (
+            <SimpleCell>⭐ Рейтинг: {travel.rating} / 5</SimpleCell>
+          )}
         </Div>
 
-        <Header mode="secondary">Описание</Header>
-        <Div>
-          <Text style={{ lineHeight: 1.5 }}>
-            {travel.description || "Отличное место для отдыха!"}
-          </Text>
-        </Div>
+        {travel.description && (
+          <>
+            <Header mode="secondary">Описание</Header>
+            <Div>
+              <Text style={{ lineHeight: 1.5 }}>{travel.description}</Text>
+            </Div>
+          </>
+        )}
 
-        <Header mode="secondary">Мои впечатления</Header>
-        <Div>
-          <Text style={{ lineHeight: 1.5, marginBottom: 16 }}>
-            {travel.review || "Путешествие прошло отлично!"}
-          </Text>
-          
-          <div style={{ display: "flex", gap: 8 }}>
-            <Button 
-              size="m" 
-              mode="primary"
-              onClick={() => console.log("Редактировать отзыв", travel.id)}
-            >
-              ✏️ Написать отзыв
-            </Button>
-            <Button 
-              size="m" 
-              mode="tertiary"
-              onClick={() => console.log("Поделиться", travel.id)}
-            >
-              📤 Поделиться
-            </Button>
-          </div>
-        </Div>
+        {travel.review && (
+          <>
+            <Header mode="secondary">Мои впечатления</Header>
+            <Div>
+              <Text style={{ lineHeight: 1.5, marginBottom: 16 }}>
+                {travel.review}
+              </Text>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button size="m" mode="primary">
+                  ✏️ Написать отзыв
+                </Button>
+                <Button size="m" mode="tertiary">
+                  📤 Поделиться
+                </Button>
+              </div>
+            </Div>
+          </>
+        )}
       </Group>
     </Panel>
   );
@@ -130,11 +137,11 @@ export default function TravelDetail({ nav, travel, onBack }) {
 function getDaysWord(days) {
   const lastDigit = days % 10;
   const lastTwoDigits = days % 100;
-  
+
   if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
     return "дней";
   }
-  
+
   switch (lastDigit) {
     case 1:
       return "день";

@@ -1,13 +1,13 @@
-import { defineConfig, transformWithEsbuild } from 'vite';
-import react from '@vitejs/plugin-react';
-import legacy from '@vitejs/plugin-legacy';
+import { defineConfig, transformWithEsbuild } from "vite";
+import react from "@vitejs/plugin-react";
+import legacy from "@vitejs/plugin-legacy";
 
 function handleModuleDirectivesPlugin() {
   return {
-    name: 'handle-module-directives-plugin',
+    name: "handle-module-directives-plugin",
     transform(code, id) {
-      if (id.includes('@vkontakte/icons')) {
-        code = code.replace(/"use-client";?/g, '');
+      if (id.includes("@vkontakte/icons")) {
+        code = code.replace(/"use-client";?/g, "");
       }
       return { code };
     },
@@ -16,13 +16,13 @@ function handleModuleDirectivesPlugin() {
 
 function threatJsFilesAsJsx() {
   return {
-    name: 'treat-js-files-as-jsx',
+    name: "treat-js-files-as-jsx",
     async transform(code, id) {
       if (!id.match(/src\/.*\.js$/)) return null;
 
       return transformWithEsbuild(code, id, {
-        loader: 'jsx',
-        jsx: 'automatic',
+        loader: "jsx",
+        jsx: "automatic",
       });
     },
   };
@@ -36,36 +36,37 @@ function threatJsFilesAsJsx() {
  * The details are here: https://dev.vk.ru/mini-apps/development/on-demand-resources.
  */
 export default defineConfig({
-  base: '/TravelDiary/',
+  base: "./",
 
   plugins: [
     react(),
     threatJsFilesAsJsx(),
     handleModuleDirectivesPlugin(),
     legacy({
-      targets: ['defaults', 'not IE 11'],
+      targets: ["defaults", "not IE 11"],
     }),
   ],
 
   // ДОБАВЬТЕ ЭТУ СЕКЦИЮ:
   server: {
+    port: 5173, // ← ДОБАВЬТЕ ЭТУ СТРОКУ (любой свободный порт)
     allowedHosts: [
-      'a69bb767d88b8814-77-222-99-234.serveousercontent.com',
-      '.serveousercontent.com', // разрешить все поддомены serveousercontent.com
-      'localhost'
-    ]
+      "localhost",
+      ".cloudpub.ru", // ← добавьте эту строку
+      ".serveousercontent.com",
+    ],
   },
 
   optimizeDeps: {
     force: true,
     esbuildOptions: {
       loader: {
-        '.js': 'jsx',
+        ".js": "jsx",
       },
     },
   },
 
   build: {
-    outDir: 'build',
+    outDir: "build",
   },
 });
