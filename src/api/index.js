@@ -6,11 +6,18 @@ let apiAvailable = null;
 async function checkApi() {
   if (apiAvailable !== null) return apiAvailable;
   try {
+    // AbortSignal.timeout не поддерживается на Android < 10
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const res = await fetch(`${API_URL}/api/health`, {
-      signal: AbortSignal.timeout(3000),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     apiAvailable = res.ok;
+    console.log("API check result:", apiAvailable);
   } catch (e) {
+    console.error("API check failed:", e);
     apiAvailable = false;
   }
   return apiAvailable;
