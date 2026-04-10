@@ -36,11 +36,17 @@ export default function PostDetail({ nav, post, onBack }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // Check if user already liked this post
-  const likedPosts = JSON.parse(
-    localStorage.getItem("travelDiaryLikedPosts") || "[]",
-  );
-  const [liked, setLiked] = useState(likedPosts.includes(post?.id));
+  // Check if user already liked this post - moved to useState initializer
+  const [liked, setLiked] = useState(() => {
+    try {
+      const likedPosts = JSON.parse(
+        localStorage.getItem("travelDiaryLikedPosts") || "[]",
+      );
+      return likedPosts.includes(post?.id);
+    } catch {
+      return false;
+    }
+  });
 
   // Load comments on mount
   useEffect(() => {

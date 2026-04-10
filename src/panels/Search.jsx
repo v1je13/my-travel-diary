@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   Panel,
   PanelHeader,
@@ -10,29 +10,54 @@ import {
   Text,
   Title,
   Avatar,
-  Button,
 } from "@vkontakte/vkui";
-import { searchPosts, getPostById } from "../api";
+import { searchPosts } from "../api";
 import Loader from "../components/Loader";
+
+// Debounce функция для поиска
+function debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
 
 export default function SearchPanel({ nav, onOpenPost }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
-  const handleSearch = async (value) => {
-    setQuery(value);
-    if (!value.trim()) {
-      setResults([]);
-      return;
-    }
+  // Debounced search function
+  const debouncedSearch = useRef(
+    debounce(async (value) => {
+      if (!value.trim()) {
+        setResults([]);
+        return;
+      }
 
-    setLoading(true);
-    const isNumeric = /^\d+$/.test(value.trim());
-    const found = await searchPosts(value, isNumeric ? value : null);
-    setResults(found);
-    setLoading(false);
-  };
+      setLoading(true);
+      const isNumeric = /^\d+$/.test(value.trim());
+      const found = await searchPosts(value, isNumeric ? value : null);
+      setResults(found);
+      setLoading(false);
+    }, 300),
+  ).current;
+
+  const handleSearch = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setQuery(value);
+
+      if (!value.trim()) {
+        setResults([]);
+        return;
+      }
+
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
 
   return (
     <Panel nav={nav} style={{ background: "#f5f0e8" }}>
@@ -40,7 +65,7 @@ export default function SearchPanel({ nav, onOpenPost }) {
       <Group>
         <VKSearch
           value={query}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={handleSearch}
           placeholder="Введите ID поста или текст..."
         />
       </Group>
@@ -49,7 +74,7 @@ export default function SearchPanel({ nav, onOpenPost }) {
 
       {!loading && query && results.length === 0 && (
         <Placeholder header="Ничего не найдено">
-          🔍 Попробуйте изменить запрос или проверить ID
+          🔍 Попробуйте изменить запрос или проверьте ID
         </Placeholder>
       )}
 

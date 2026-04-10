@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import "../styles/vkStories.css";
 
 const GRADIENT_COLORS = [
@@ -129,7 +129,7 @@ export function setCurrentUserNames(firstName, lastName) {
   return updated;
 }
 
-export default function StoriesBar({
+export default React.memo(function StoriesBar({
   stories = [],
   myStories = [],
   onCreateStory,
@@ -140,36 +140,39 @@ export default function StoriesBar({
   const longPressTimerRef = useRef(null);
   const currentUser = propUser || getCurrentUser();
 
-  // Create "My Story" group
-  const myStoryGroup = {
-    id: currentUser.id,
-    name: currentUser.firstName,
-    avatar: null,
-    stories: myStories,
-    isMine: true,
-  };
+  // Memoize story grouping to avoid recalculation on every render
+  const allGroups = useMemo(() => {
+    // Create "My Story" group
+    const myStoryGroup = {
+      id: currentUser.id,
+      name: currentUser.firstName,
+      avatar: null,
+      stories: myStories,
+      isMine: true,
+    };
 
-  // Group stories by unique authorId
-  const groupedStories = {};
-  stories.forEach((story) => {
-    if (story.authorId === currentUser.id) return;
-    const userId = story.authorId;
-    if (!groupedStories[userId]) {
-      groupedStories[userId] = {
-        id: userId,
-        name: story.authorName || "Пользователь",
-        avatar: story.authorAvatar,
-        stories: [],
-        timestamp: story.timestamp,
-      };
-    }
-    groupedStories[userId].stories.push(story);
-    if (story.timestamp > groupedStories[userId].timestamp) {
-      groupedStories[userId].timestamp = story.timestamp;
-    }
-  });
+    // Group stories by unique authorId
+    const groupedStories = {};
+    stories.forEach((story) => {
+      if (story.authorId === currentUser.id) return;
+      const userId = story.authorId;
+      if (!groupedStories[userId]) {
+        groupedStories[userId] = {
+          id: userId,
+          name: story.authorName || "Пользователь",
+          avatar: story.authorAvatar,
+          stories: [],
+          timestamp: story.timestamp,
+        };
+      }
+      groupedStories[userId].stories.push(story);
+      if (story.timestamp > groupedStories[userId].timestamp) {
+        groupedStories[userId].timestamp = story.timestamp;
+      }
+    });
 
-  const allGroups = [myStoryGroup, ...Object.values(groupedStories)];
+    return [myStoryGroup, ...Object.values(groupedStories)];
+  }, [stories, myStories, currentUser.id, currentUser.firstName]);
 
   const handleStoryClick = (group) => {
     if (group.isMine) {

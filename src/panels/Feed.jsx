@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import vkBridge from "@vkontakte/vk-bridge";
 import {
   Panel,
@@ -14,9 +14,6 @@ import {
   Avatar,
   Search,
   Button,
-  Textarea,
-  Separator,
-  FormItem,
   Div,
   PullToRefresh,
 } from "@vkontakte/vkui";
@@ -29,16 +26,16 @@ import { getPosts, getStories, savePost, searchPosts } from "../api";
 import { useVKUser } from "../hooks/useVKUser";
 import "../styles/vkStories.css";
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-}
-
 const currentUser = getCurrentUser();
+
+// Debounce функция для поиска
+function debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
 
 export default function Feed({
   nav,
@@ -58,6 +55,7 @@ export default function Feed({
       setCurrentUser(updated);
     }
   }, [vkUser.user]);
+
   const [feedPosts, setFeedPosts] = useState([]);
   const [myStories, setMyStories] = useState([]);
   const [viewedStories, setViewedStories] = useState(new Set());
@@ -65,16 +63,22 @@ export default function Feed({
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const isMountedRef = useRef(true);
 
   const loadData = async () => {
+    if (!isMountedRef.current) return;
+
     const stories = await getStories();
     const posts = await getPosts();
     const viewed = JSON.parse(
       localStorage.getItem("travelDiaryViewedStories") || "[]",
     );
-    setMyStories(stories);
-    setFeedPosts(posts);
-    setViewedStories(new Set(viewed));
+
+    if (isMountedRef.current) {
+      setMyStories(stories);
+      setFeedPosts(posts);
+      setViewedStories(new Set(viewed));
+    }
   };
 
   const handleRefresh = async () => {
@@ -83,39 +87,72 @@ export default function Feed({
     setRefreshing(false);
   };
 
-  // Load data from API
+  // Load data on mount
   useEffect(() => {
+    isMountedRef.current = true;
     loadData();
 
     // Refresh when VK app is opened
-    vkBridge.subscribe((e) => {
+    const unsubscribe = vkBridge.subscribe((e) => {
       if (e.detail?.type === "VKWebAppInit") {
         loadData();
       }
     });
+
+    return () => {
+      isMountedRef.current = false;
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
-  // Reload data periodically (every 30 seconds)
+  // Reload data periodically ONLY when page is visible
   useEffect(() => {
-    const interval = setInterval(loadData, 30000);
+    const interval = setInterval(() => {
+      // Проверяем видимость страницы перед обновлением
+      if (document.visibilityState === "visible" && isMountedRef.current) {
+        loadData();
+      }
+    }, 60000); // Увеличили с 30 до 60 секунд
+
     return () => clearInterval(interval);
   }, []);
 
-  // Search handler
-  const handleSearch = useCallback(async (value) => {
-    setSearchQuery(value);
-    if (!value.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+  // Search handler with debounce
+  const debouncedSearch = useRef(
+    debounce(async (value) => {
+      if (!value.trim()) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-    setIsSearching(true);
-    const isNumeric = /^\d+$/.test(value.trim());
-    const results = await searchPosts(value, isNumeric ? value : null);
-    setSearchResults(results);
-    setIsSearching(false);
-  }, []);
+      setIsSearching(true);
+      const isNumeric = /^\d+$/.test(value.trim());
+      const results = await searchPosts(value, isNumeric ? value : null);
+
+      if (isMountedRef.current) {
+        setSearchResults(results);
+        setIsSearching(false);
+      }
+    }, 300),
+  ).current;
+
+  const handleSearch = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setSearchQuery(value);
+
+      if (!value.trim()) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
 
   // Filter posts when searching locally
   const displayPosts =
@@ -162,7 +199,7 @@ export default function Feed({
         {/* Search Bar */}
         <Search
           value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={handleSearch}
           placeholder="Поиск по ID или тексту..."
         />
 
