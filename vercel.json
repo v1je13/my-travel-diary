@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://traveldiary-api.traveldiary-api.workers.dev/api/:path*"
+    }
+  ]
+}

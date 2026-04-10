@@ -1,6 +1,10 @@
+// Для VK Mini App и Vercel используем относительный путь для проксирования через Vercel
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://traveldiary-api.traveldiary-api.workers.dev";
+  (typeof window !== "undefined" &&
+  window.location.hostname.includes("vercel.app")
+    ? "" // относительный путь для проксирования через Vercel
+    : "https://traveldiary-api.traveldiary-api.workers.dev");
 let apiAvailable = null;
 
 async function checkApi() {
