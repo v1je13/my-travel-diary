@@ -1,15 +1,14 @@
-// Для VK Mini App и Vercel используем относительный путь для проксирования через Vercel
+// Для VK Mini App используем Cloudflare Workers API напрямую
+// Vercel прокси не работает в VK WebView
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined" &&
-  window.location.hostname.includes("vercel.app")
-    ? "" // относительный путь для проксирования через Vercel
-    : "https://traveldiary-api.traveldiary-api.workers.dev");
+  "https://traveldiary-api.traveldiary-api.workers.dev";
 let apiAvailable = null;
 
 async function checkApi() {
   if (apiAvailable !== null) return apiAvailable;
   try {
+    console.log("🔍 API Check: Проверяем доступность API...", API_URL);
     // AbortSignal.timeout не поддерживается на Android < 10
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -19,9 +18,9 @@ async function checkApi() {
     });
     clearTimeout(timeoutId);
     apiAvailable = res.ok;
-    console.log("API check result:", apiAvailable);
+    console.log("✅ API Check result:", apiAvailable, "Status:", res.status);
   } catch (e) {
-    console.error("API check failed:", e);
+    console.error("❌ API check failed:", e.message, e);
     apiAvailable = false;
   }
   return apiAvailable;
