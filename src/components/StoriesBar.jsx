@@ -84,30 +84,37 @@ function generateRandomName() {
 export function getCurrentUser() {
   let user = localStorage.getItem("travelDiaryCurrentUser");
   if (!user) {
+    // По умолчанию используем просто "Вы" без случайных имён
     const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const { firstName, lastName, displayName } = generateRandomName();
-    user = JSON.stringify({ id, firstName, lastName, displayName });
+    user = JSON.stringify({
+      id,
+      firstName: "Вы",
+      lastName: "",
+      displayName: "Вы",
+    });
     localStorage.setItem("travelDiaryCurrentUser", user);
   }
   return JSON.parse(user);
 }
 
-// Initialize from VK if available
 export function initUserFromVK(vkUser) {
   if (!vkUser || !vkUser.first_name) return getCurrentUser();
-  const current = getCurrentUser();
-  // Only update if current name is still the random one
-  const stored = JSON.parse(localStorage.getItem("travelDiaryCurrentUser"));
-  if (stored.firstName && stored.firstName.includes(" ")) return stored; // already custom set
 
-  const updated = {
-    ...current,
-    firstName: vkUser.first_name,
-    lastName: vkUser.last_name || "",
-    displayName: `${vkUser.first_name} ${vkUser.last_name || ""}`,
-  };
-  localStorage.setItem("travelDiaryCurrentUser", JSON.stringify(updated));
-  return updated;
+  const current = getCurrentUser();
+
+  // Обновляем имя только если сейчас используется "Вы" или случайное имя
+  if (current.displayName === "Вы" || current.displayName.includes("#")) {
+    const updated = {
+      ...current,
+      firstName: vkUser.first_name,
+      lastName: vkUser.last_name || "",
+      displayName: `${vkUser.first_name} ${vkUser.last_name || ""}`,
+    };
+    localStorage.setItem("travelDiaryCurrentUser", JSON.stringify(updated));
+    return updated;
+  }
+
+  return current;
 }
 
 export function setCurrentUserNames(firstName, lastName) {
