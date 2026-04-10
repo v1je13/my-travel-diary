@@ -1,8 +1,11 @@
-// Для VK Mini App используем Cloudflare Workers API напрямую
-// Vercel прокси не работает в VK WebView
+// Для VK Mini App используем Vercel API proxy чтобы избежать CORS проблем
+// API запросы идут через тот же домен что и фронтенд
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://traveldiary-api.traveldiary-api.workers.dev";
+  (typeof window !== "undefined" &&
+  window.location.hostname.includes("vercel.app")
+    ? "" // используем относительный путь для Vercel proxy
+    : "https://traveldiary-api.traveldiary-api.workers.dev");
 let apiAvailable = null;
 
 async function checkApi() {
