@@ -208,24 +208,17 @@ export default function StoryCreatorVK({
         timestamp: Date.now(),
         views: 0,
         type: video ? "video" : "photo",
-        authorName: currentUser.firstName,
+        authorName: currentUser.firstName || "Вы",
         authorId: currentUser.id,
       };
 
-      const saved = await saveStory(story);
-
-      const localSaved = JSON.parse(
-        localStorage.getItem("travelDiaryStories") || "[]",
+      // saveStory() уже сохраняет в localStorage + синхронизирует с API в фоне
+      // Не сохраняем дважды!
+      saveStory(story).catch((err) =>
+        console.error("Failed to sync story to API:", err),
       );
-      if (existingStory && !addToExisting) {
-        const idx = localSaved.findIndex((s) => s.id === existingStory.id);
-        if (idx !== -1) localSaved[idx] = story;
-      } else {
-        localSaved.push(story);
-      }
-      localStorage.setItem("travelDiaryStories", JSON.stringify(localSaved));
 
-      onPublish(saved || story);
+      onPublish(story);
       onBack();
     } catch (err) {
       setAlertMessage("Ошибка: " + err.message);

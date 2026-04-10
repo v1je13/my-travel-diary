@@ -42,25 +42,24 @@ export async function getStories() {
 }
 
 export async function saveStory(story) {
+  // Сначала сохраняем в localStorage (мгновенно)
   const localSaved = JSON.parse(
     localStorage.getItem("travelDiaryStories") || "[]",
   );
+  localSaved.push(story);
+  localStorage.setItem("travelDiaryStories", JSON.stringify(localSaved));
 
-  if (await checkApi()) {
-    try {
-      const res = await fetch(`${API_URL}/api/stories`, {
+  // В фоне отправляем в API (не блокируем)
+  checkApi().then((apiAvailable) => {
+    if (apiAvailable) {
+      fetch(`${API_URL}/api/stories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(story),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("API save failed, using localStorage");
+      }).catch((e) => console.warn("API save story failed:", e));
     }
-  }
+  });
 
-  localSaved.push(story);
-  localStorage.setItem("travelDiaryStories", JSON.stringify(localSaved));
   return story;
 }
 
@@ -143,25 +142,24 @@ export async function addComment(comment) {
 }
 
 export async function savePost(post) {
+  // Сначала сохраняем в localStorage (мгновенно)
   const localPosts = JSON.parse(
     localStorage.getItem("travelDiaryFeedPosts") || "[]",
   );
+  localPosts.unshift(post);
+  localStorage.setItem("travelDiaryFeedPosts", JSON.stringify(localPosts));
 
-  if (await checkApi()) {
-    try {
-      const res = await fetch(`${API_URL}/api/posts`, {
+  // В фоне отправляем в API (не блокируем)
+  checkApi().then((apiAvailable) => {
+    if (apiAvailable) {
+      fetch(`${API_URL}/api/posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(post),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("API save failed, using localStorage");
+      }).catch((e) => console.warn("API save failed:", e));
     }
-  }
+  });
 
-  localPosts.unshift(post);
-  localStorage.setItem("travelDiaryFeedPosts", JSON.stringify(localPosts));
   return post;
 }
 
