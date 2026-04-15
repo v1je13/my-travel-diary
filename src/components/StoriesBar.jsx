@@ -61,7 +61,7 @@ export function setCurrentUserNames(firstName, lastName) {
   return updated;
 };
 
-export default React.memo(function StoriesBar({
+const StoriesBarComponent = function StoriesBar({
   stories = [],
   myStories = [],
   onCreateStory,
@@ -215,9 +215,11 @@ export default React.memo(function StoriesBar({
       </div>
     </div>
   );
-});
+};
 
-StoriesBar.propTypes = {
+export default React.memo(StoriesBarComponent);
+
+StoriesBarComponent.propTypes = {
   stories: PropTypes.arrayOf(PropTypes.object),
   myStories: PropTypes.arrayOf(PropTypes.object),
   onCreateStory: PropTypes.func,
