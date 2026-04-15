@@ -2,7 +2,6 @@ import React, { useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 import { getGradientColor } from "../utils/helpers";
 import { GRADIENT_COLORS, STORAGE_KEYS } from "../constants/app";
-import { useLocalStorageSet } from "../hooks/useLocalStorage";
 import "../styles/vkStories.css";
 
 export function getCurrentUser() {
