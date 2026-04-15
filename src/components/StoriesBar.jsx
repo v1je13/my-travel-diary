@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from "react";
 import PropTypes from "prop-types";
-import { getGradientColor, GRADIENT_COLORS, STORAGE_KEYS } from "../constants/app";
+import { getGradientColor } from "../utils/helpers";
+import { GRADIENT_COLORS, STORAGE_KEYS } from "../constants/app";
 import { useLocalStorageSet } from "../hooks/useLocalStorage";
 import "../styles/vkStories.css";
 
@@ -141,7 +142,7 @@ export default React.memo(function StoriesBar({
           {allGroups.map((group) => {
             const hasStories = group.stories.length > 0;
             const isViewed = hasStories && viewedStories.has(group.id);
-            const gradientColor = getGradientColor(group.id);
+            const gradientColor = getGradientColor(group.id, GRADIENT_COLORS);
             const storyCount = group.stories.length;
 
             return (
