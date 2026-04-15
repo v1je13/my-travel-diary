@@ -16,23 +16,22 @@ import {
 import { searchPosts } from "../services/api";
 import { APP_CONFIG } from "../constants/app";
 
-export default function Search({ nav, onOpenPost }) {
+export default function SearchPanel({ nav, onOpenPost }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const searchTimeoutRef = useRef(null);
 
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
 
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(async () => {
-      if (query && query.trim()) {
+      if (value && value.trim()) {
         setLoading(true);
         try {
-          const results = await searchPosts(query);
+          const results = await searchPosts(value);
           setPosts(results || []);
           setHasSearched(true);
         } catch (error) {
@@ -138,7 +137,7 @@ export default function Search({ nav, onOpenPost }) {
   );
 }
 
-Search.propTypes = {
+SearchPanel.propTypes = {
   nav: PropTypes.string.isRequired,
   onOpenPost: PropTypes.func,
 };

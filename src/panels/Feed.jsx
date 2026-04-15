@@ -86,8 +86,10 @@ export default function Feed({
   };
 
   // Debounced search
-  const handleSearch = useCallback((e) => {
-    const query = e.target.value;
+  const handleSearch = useCallback((value) => {
+    // VKUI Search передаёт value напрямую, не event
+    const query =
+      typeof value === "string" ? value : value?.target?.value || "";
     setSearchQuery(query);
 
     clearTimeout(searchTimeoutRef.current);
