@@ -38,7 +38,7 @@ export default function PostDetail({ nav, post, onBack }) {
   const currentUser = getCurrentUser();
   const [likedPosts, setLikedPosts] = useLocalStorage(
     STORAGE_KEYS.LIKED_POSTS,
-    []
+    [],
   );
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes || 0);
@@ -93,7 +93,15 @@ export default function PostDetail({ nav, post, onBack }) {
     if (!commentText || !commentText.trim()) return;
 
     try {
-      const result = await addComment(post.id, currentUser.id, commentText);
+      const comment = {
+        postId: post.id,
+        author: currentUser.displayName || currentUser.firstName || "Вы",
+        authorId: currentUser.id,
+        text: commentText,
+        date: new Date().toISOString().split("T")[0],
+      };
+
+      const result = await addComment(comment);
       if (result) {
         setComments((prev) => [result, ...prev]);
         setCommentText("");
@@ -106,7 +114,9 @@ export default function PostDetail({ nav, post, onBack }) {
   if (!post) {
     return (
       <Panel nav={nav}>
-        <PanelHeader before={<PanelHeaderButton onClick={onBack}>Назад</PanelHeaderButton>}>
+        <PanelHeader
+          before={<PanelHeaderButton onClick={onBack}>Назад</PanelHeaderButton>}
+        >
           Пост не найден
         </PanelHeader>
         <Group>
@@ -146,7 +156,7 @@ export default function PostDetail({ nav, post, onBack }) {
 
   return (
     <Panel nav={nav}>
-      <PanelHeader 
+      <PanelHeader
         before={
           <Button mode="tertiary" onClick={onBack}>
             ← Назад
@@ -159,13 +169,23 @@ export default function PostDetail({ nav, post, onBack }) {
       {/* Автор и основной контент */}
       <Group>
         <Div>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
-            <Avatar size={56} src={post.avatar || "https://vk.com/images/camera_100.png"} />
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 16 }}
+          >
+            <Avatar
+              size={56}
+              src={post.avatar || "https://vk.com/images/camera_100.png"}
+            />
             <div style={{ marginLeft: 12 }}>
               <Title level="2" style={{ fontSize: 18 }}>
                 {post.author || "Пользователь"}
               </Title>
-              <Text style={{ fontSize: 13, color: "var(--vkui--color_text_secondary)" }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "var(--vkui--color_text_secondary)",
+                }}
+              >
                 {post.date || "только что"} • {getCategoryTitle()}
               </Text>
             </div>
@@ -210,10 +230,13 @@ export default function PostDetail({ nav, post, onBack }) {
               </SimpleCell>
               {post.difficulty && (
                 <SimpleCell>
-                  🎯 Сложность: <strong>
-                    {post.difficulty === "легкий" ? "🟢 Легкий" : 
-                     post.difficulty === "средний" ? "🟡 Средний" : 
-                     "🔴 Сложный"}
+                  🎯 Сложность:{" "}
+                  <strong>
+                    {post.difficulty === "легкий"
+                      ? "🟢 Легкий"
+                      : post.difficulty === "средний"
+                        ? "🟡 Средний"
+                        : "🔴 Сложный"}
                   </strong>
                 </SimpleCell>
               )}
@@ -232,16 +255,16 @@ export default function PostDetail({ nav, post, onBack }) {
               <HorizontalScroll>
                 <div style={{ display: "flex", gap: 8, padding: "8px 0" }}>
                   {post.images.map((img, idx) => (
-                    <img 
+                    <img
                       key={idx}
-                      src={img} 
+                      src={img}
                       alt={`Фото ${idx + 1}`}
-                      style={{ 
-                        width: 200, 
-                        height: 150, 
-                        objectFit: "cover", 
+                      style={{
+                        width: 200,
+                        height: 150,
+                        objectFit: "cover",
                         borderRadius: 12,
-                        cursor: "pointer"
+                        cursor: "pointer",
                       }}
                       onClick={() => console.log("Открыть фото", idx)}
                     />
@@ -253,35 +276,41 @@ export default function PostDetail({ nav, post, onBack }) {
 
           {/* Действия с постом */}
           <Separator style={{ margin: "16px 0" }} />
-          
-          <div style={{ display: "flex", justifyContent: "space-around", marginBottom: 16 }}>
-            <Button 
-              mode={liked ? "primary" : "tertiary"} 
-              size="l" 
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              marginBottom: 16,
+            }}
+          >
+            <Button
+              mode={liked ? "primary" : "tertiary"}
+              size="l"
               before={liked ? null : <Icon28LikeOutline />}
               onClick={handleLike}
             >
               {likesCount}
             </Button>
-            <Button 
-              mode="tertiary" 
-              size="l" 
+            <Button
+              mode="tertiary"
+              size="l"
               before={<Icon28CommentOutline />}
               onClick={() => document.getElementById("comment-input")?.focus()}
             >
               {post.comments || 0}
             </Button>
-            <Button 
-              mode="tertiary" 
-              size="l" 
+            <Button
+              mode="tertiary"
+              size="l"
               before={<Icon28ShareOutline />}
               onClick={() => onShare && onShare(post.id)}
             >
               {post.reposts || 0}
             </Button>
-            <Button 
-              mode="tertiary" 
-              size="l" 
+            <Button
+              mode="tertiary"
+              size="l"
               before={<Icon28BookmarkOutline />}
               onClick={() => console.log("Добавить в закладки")}
             >
@@ -294,11 +323,18 @@ export default function PostDetail({ nav, post, onBack }) {
       </Group>
 
       {/* Комментарии */}
-      <Group header={<Header mode="secondary">Комментарии ({comments.length})</Header>}>
+      <Group
+        header={
+          <Header mode="secondary">Комментарии ({comments.length})</Header>
+        }
+      >
         <Div>
           {/* Форма добавления комментария */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <Avatar size={36} src={currentUser.avatar || "https://vk.com/images/camera_100.png"} />
+            <Avatar
+              size={36}
+              src={currentUser.avatar || "https://vk.com/images/camera_100.png"}
+            />
             <div style={{ flex: 1 }}>
               <FormItem>
                 <Textarea
@@ -309,10 +345,16 @@ export default function PostDetail({ nav, post, onBack }) {
                   rows={2}
                 />
               </FormItem>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                <Button 
-                  size="s" 
-                  mode="primary" 
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: 8,
+                }}
+              >
+                <Button
+                  size="s"
+                  mode="primary"
                   onClick={handleAddComment}
                   disabled={!commentText || !commentText.trim()}
                 >
@@ -323,16 +365,32 @@ export default function PostDetail({ nav, post, onBack }) {
           </div>
 
           {/* Список комментариев */}
-          {comments.map(comment => (
-            <Card key={comment.id} mode="outline" style={{ marginBottom: 12, padding: 12 }}>
+          {comments.map((comment) => (
+            <Card
+              key={comment.id}
+              mode="outline"
+              style={{ marginBottom: 12, padding: 12 }}
+            >
               <div style={{ display: "flex", gap: 12 }}>
                 <Avatar size={40} src={comment.avatar} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 4,
+                    }}
+                  >
                     <Title level="3" style={{ fontSize: 14 }}>
                       {comment.author}
                     </Title>
-                    <Text style={{ fontSize: 11, color: "var(--vkui--color_text_secondary)" }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "var(--vkui--color_text_secondary)",
+                      }}
+                    >
                       {comment.date}
                     </Text>
                   </div>
@@ -340,10 +398,18 @@ export default function PostDetail({ nav, post, onBack }) {
                     {comment.text}
                   </Text>
                   <div style={{ display: "flex", gap: 12 }}>
-                    <Button mode="tertiary" size="s" before={<Icon28LikeOutline width={14} height={14} />}>
+                    <Button
+                      mode="tertiary"
+                      size="s"
+                      before={<Icon28LikeOutline width={14} height={14} />}
+                    >
                       {comment.likes}
                     </Button>
-                    <Button mode="tertiary" size="s" before={<Icon28MessageOutline width={14} height={14} />}>
+                    <Button
+                      mode="tertiary"
+                      size="s"
+                      before={<Icon28MessageOutline width={14} height={14} />}
+                    >
                       Ответить
                     </Button>
                   </div>

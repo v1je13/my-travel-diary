@@ -10,7 +10,6 @@ import {
   Card,
   Title,
   Text,
-  Link,
   Image,
   Avatar,
   Search,
@@ -118,6 +117,7 @@ export default function Feed({
   return (
     <Panel nav={nav}>
       <PullToRefresh onRefresh={onRefresh} isRefreshing={refreshing}>
+        {/* Stories Bar */}
         <StoriesBar
           stories={stories}
           myStories={myStories}
@@ -126,25 +126,57 @@ export default function Feed({
           viewedStories={viewedStories}
           currentUser={currentUser}
         />
-        <Div style={{ paddingBottom: 20 }}>
+
+        {/* Search */}
+        <Div style={{ paddingBottom: 8 }}>
           <Search
             value={searchQuery}
             onChange={handleSearch}
             placeholder="Поиск по ID или тексту..."
           />
         </Div>
+
+        {/* Create Post Button */}
+        {onOpenCreatePost && (
+          <Div>
+            <Button
+              stretched
+              size="l"
+              mode="primary"
+              before={<Icon20Add />}
+              onClick={() => onOpenCreatePost()}
+            >
+              Создать запись
+            </Button>
+          </Div>
+        )}
+
+        {/* Posts Feed */}
         {posts.length === 0 ? (
-          <Group>
-            <Placeholder>Нет постов</Placeholder>
-          </Group>
+          searchQuery ? (
+            <Group>
+              <Placeholder header="Ничего не найдено">
+                Попробуйте изменить запрос
+              </Placeholder>
+            </Group>
+          ) : (
+            <Group>
+              <Placeholder header="Лента пуста">
+                Будьте первым, кто поделится впечатлениями!
+              </Placeholder>
+            </Group>
+          )
         ) : (
           <Group>
             {posts.map((post) => (
               <Card
                 key={post.id}
                 mode="shadow"
-                style={{ marginBottom: 12 }}
-                onClick={() => onOpenPost && onOpenPost(post)}
+                style={{ marginBottom: 12, cursor: "pointer" }}
+                onClick={() => {
+                  console.log("Post clicked:", post.id, onOpenPost);
+                  onOpenPost && onOpenPost(post);
+                }}
               >
                 <Div>
                   <div
@@ -175,8 +207,10 @@ export default function Feed({
                     </div>
                   </div>
                   {post.text && (
-                    <Text style={{ marginBottom: 8 }}>
-                      {post.text.slice(0, 150)}...
+                    <Text style={{ marginBottom: 8, lineHeight: 1.4 }}>
+                      {post.text.length > 200
+                        ? post.text.slice(0, 200) + "..."
+                        : post.text}
                     </Text>
                   )}
                   {post.image && !post.video && (
@@ -186,10 +220,12 @@ export default function Feed({
                         width: "100%",
                         borderRadius: 8,
                         marginBottom: 8,
+                        maxHeight: 300,
+                        objectFit: "cover",
                       }}
                     />
                   )}
-                  <div style={{ display: "flex", gap: 16 }}>
+                  <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
                     <Text style={{ fontSize: 12 }}>❤️ {post.likes || 0}</Text>
                     <Text style={{ fontSize: 12 }}>
                       💬 {post.comments || 0}

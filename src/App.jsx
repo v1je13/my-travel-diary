@@ -125,11 +125,11 @@ function AppContent() {
   };
 
   const handleStoryReply = (reply) => {
-    console.log('Story reply:', reply);
+    console.log("Story reply:", reply);
   };
 
   const handleMarkStoryViewed = (index) => {
-    console.log('Story viewed at index:', index);
+    console.log("Story viewed at index:", index);
   };
 
   const addToExistingMode = editingStory !== null;
@@ -177,6 +177,7 @@ function AppContent() {
                 onCreateStory={handleCreateStory}
                 onViewStory={handleViewStory}
                 onEditStory={handleEditStory}
+                onOpenCreatePost={() => setActivePanel("feed")}
               />
               <PostDetail
                 nav="postDetail"
