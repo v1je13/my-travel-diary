@@ -90,7 +90,7 @@ export default function PostDetail({ nav, post, onBack }) {
       console.error("Like failed:", e);
     }
 
-    // Persist liked state using custom hook
+  
     if (willLike) {
       setLikedPosts(prev => {
         if (!prev.includes(post.id)) {
