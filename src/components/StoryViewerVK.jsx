@@ -24,7 +24,7 @@ function formatTimestamp(timestamp) {
   }
 }
 
-export default function StoryViewer({
+export default function StoryViewerVK({
   nav,
   stories = [],
   initialIndex = 0,
