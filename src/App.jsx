@@ -8,7 +8,6 @@ import {
   Tabbar,
   TabbarItem,
 } from "@vkontakte/vkui";
-import "@vkontakte/vkui/dist/vkui.css";
 
 // Импортируем иконки
 import MapIcon from "./assets/NavigationIcon/MapIcon.png";

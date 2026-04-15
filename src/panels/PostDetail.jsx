@@ -24,12 +24,10 @@ import {
 } from "@vkontakte/vkui";
 import {
   Icon28LikeOutline,
-  Icon28LikeFill,
   Icon28CommentOutline,
   Icon28ShareOutline,
   Icon28BookmarkOutline,
   Icon28MessageOutline,
-  Icon28Back,
 } from "@vkontakte/icons";
 import { likePost, addComment, getPostComments } from "../services/api";
 import { STORAGE_KEYS } from "../constants/app";
@@ -260,10 +258,10 @@ export default function PostDetail({ nav, post, onBack }) {
             <Button 
               mode={liked ? "primary" : "tertiary"} 
               size="l" 
-              before={<Icon28LikeOutline />}
+              before={liked ? null : <Icon28LikeOutline />}
               onClick={handleLike}
             >
-              {post.likes + (liked ? 1 : 0)}
+              {likesCount}
             </Button>
             <Button 
               mode="tertiary" 
