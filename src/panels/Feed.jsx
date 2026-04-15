@@ -43,9 +43,8 @@ export default function Feed({
   const [stories, setStories] = useState([]);
   const [myStories, setMyStories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewedStories, setViewedStories] = useLocalStorageSet(
-    STORAGE_KEYS.VIEWED_STORIES,
-    new Set()
+  const [viewedStories, addToViewed, removeFromViewed, hasViewed] = useLocalStorageSet(
+    STORAGE_KEYS.VIEWED_STORIES
   );
   const [refreshing, setRefreshing] = useState(false);
   const currentUser = getCurrentUser();
@@ -90,7 +89,7 @@ export default function Feed({
 
   const debouncedSearch = useCallback(
     useDebounce(async (query) => {
-      if (query.trim()) {
+      if (query && query.trim()) {
         const results = await searchPosts(query);
         setPosts(results || []);
       } else {

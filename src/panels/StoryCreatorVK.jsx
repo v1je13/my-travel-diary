@@ -152,7 +152,7 @@ export default function StoryCreatorVK({
   };
 
   const handlePublish = async () => {
-    if (!image && !video && !text.trim() && stickers.length === 0) {
+    if (!image && !video && (!text || !text.trim()) && stickers.length === 0) {
       setAlertMessage("Добавьте фото, видео или текст");
       setShowAlert(true);
       return;
@@ -191,7 +191,7 @@ export default function StoryCreatorVK({
   };
 
   const handlePublishToFeed = async () => {
-    if (!image && !video && !text.trim()) {
+    if (!image && !video && (!text || !text.trim())) {
       setAlertMessage("Нечего публиковать");
       setShowAlert(true);
       return;
@@ -659,7 +659,7 @@ export default function StoryCreatorVK({
               onClick={handlePublish}
               disabled={
                 publishing ||
-                (!image && !video && !text.trim() && stickers.length === 0)
+                (!image && !video && (!text || !text.trim()) && stickers.length === 0)
               }
               style={{
                 flex: 2,

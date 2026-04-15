@@ -90,7 +90,7 @@ export default function PostDetail({ nav, post, onBack }) {
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim()) return;
+    if (!commentText || !commentText.trim()) return;
 
     try {
       const result = await addComment(post.id, currentUser.id, commentText);
@@ -314,7 +314,7 @@ export default function PostDetail({ nav, post, onBack }) {
                   size="s" 
                   mode="primary" 
                   onClick={handleAddComment}
-                  disabled={!commentText.trim()}
+                  disabled={!commentText || !commentText.trim()}
                 >
                   Отправить
                 </Button>

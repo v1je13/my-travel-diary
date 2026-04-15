@@ -24,7 +24,7 @@ export default function Search({ nav, onOpenPost }) {
 
   const debouncedSearch = useCallback(
     useDebounce(async (query) => {
-      if (query.trim()) {
+      if (query && query.trim()) {
         setLoading(true);
         try {
           const results = await searchPosts(query);

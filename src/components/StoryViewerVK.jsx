@@ -214,7 +214,7 @@ export default function StoryViewerVK({
   };
 
   const handleReplySubmit = () => {
-    if (replyText.trim() && onReply) {
+    if (replyText && replyText.trim() && onReply) {
       onReply(replyText.trim());
       setReplyText("");
     }

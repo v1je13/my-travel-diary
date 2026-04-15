@@ -61,10 +61,10 @@ export default function CreatePostModal({ visible, onClose, onPublished }) {
   };
 
   const handlePublish = async () => {
-    if (!text.trim() && mediaFiles.length === 0) return;
+    if (!text || !text.trim() && mediaFiles.length === 0) return;
 
     const post = {
-      title: title.trim() || null,
+      title: title && title.trim() || null,
       author: currentUser.displayName,
       avatar: "",
       text: text,
@@ -243,7 +243,7 @@ export default function CreatePostModal({ visible, onClose, onPublished }) {
               size="l"
               mode="primary"
               onClick={handlePublish}
-              disabled={uploading || (!text.trim() && mediaFiles.length === 0)}
+              disabled={uploading || (!text || !text.trim() && mediaFiles.length === 0)}
             >
               {uploading ? "Загрузка..." : "Опубликовать"}
             </Button>
