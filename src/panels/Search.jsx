@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
@@ -11,53 +12,43 @@ import {
   Title,
   Avatar,
 } from "@vkontakte/vkui";
-import { searchPosts } from "../api";
+import { searchPosts } from "../services/api";
 import Loader from "../components/Loader";
-
-// Debounce функция для поиска
-function debounce(fn, delay) {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-}
+import { useDebounce } from "../hooks/useDebounce";
+import { APP_CONFIG } from "../constants/app";
 
 export default function SearchPanel({ nav, onOpenPost }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
-  // Debounced search function
-  const debouncedSearch = useRef(
-    debounce(async (value) => {
-      if (!value.trim()) {
+  // Используем кастомный хук для debounce
+  const debouncedQuery = useDebounce(query, APP_CONFIG.DEBOUNCE_DELAY);
+
+  // Выполняем поиск при изменении debouncedQuery
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedQuery.trim()) {
         setResults([]);
+        setLoading(false);
         return;
       }
 
       setLoading(true);
-      const isNumeric = /^\d+$/.test(value.trim());
-      const found = await searchPosts(value, isNumeric ? value : null);
-      setResults(found);
-      setLoading(false);
-    }, 300),
-  ).current;
-
-  const handleSearch = useCallback(
-    (e) => {
-      const value = e.target.value;
-      setQuery(value);
-
-      if (!value.trim()) {
+      try {
+        const isNumeric = /^\d+$/.test(debouncedQuery.trim());
+        const found = await searchPosts(debouncedQuery, isNumeric ? debouncedQuery : null);
+        setResults(found);
+      } catch (error) {
+        console.error('Search error:', error);
         setResults([]);
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      debouncedSearch(value);
-    },
-    [debouncedSearch],
-  );
+    performSearch();
+  }, [debouncedQuery]);
 
   return (
     <Panel nav={nav} style={{ background: "#f5f0e8" }}>
@@ -65,7 +56,7 @@ export default function SearchPanel({ nav, onOpenPost }) {
       <Group>
         <VKSearch
           value={query}
-          onChange={handleSearch}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Введите ID поста или текст..."
         />
       </Group>
@@ -158,3 +149,8 @@ export default function SearchPanel({ nav, onOpenPost }) {
     </Panel>
   );
 }
+
+SearchPanel.propTypes = {
+  nav: PropTypes.string.isRequired,
+  onOpenPost: PropTypes.func,
+};

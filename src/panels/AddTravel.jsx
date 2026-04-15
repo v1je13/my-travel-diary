@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
@@ -148,3 +149,9 @@ export default function AddTravel({ nav, onBack, onSave }) {
     </Panel>
   );
 }
+
+AddTravel.propTypes = {
+  nav: PropTypes.string.isRequired,
+  onBack: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+};

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import PropTypes from "prop-types";
 import {
   ModalRoot,
   ModalPage,
@@ -14,7 +15,7 @@ import {
   Input,
 } from "@vkontakte/vkui";
 import { Icon24Camera, Icon24Video } from "@vkontakte/icons";
-import { savePost } from "../api";
+import { savePost } from "../services/api";
 import { getCurrentUser } from "./StoriesBar";
 
 const currentUser = getCurrentUser();
@@ -257,3 +258,9 @@ export default function CreatePostModal({ visible, onClose, onPublished }) {
     </ModalRoot>
   );
 }
+
+CreatePostModal.propTypes = {
+  id: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+};

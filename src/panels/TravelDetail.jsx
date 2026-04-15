@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
@@ -10,6 +11,7 @@ import {
   SimpleCell,
   Header,
 } from "@vkontakte/vkui";
+import { getDaysWord } from "../utils/helpers";
 
 export default function TravelDetail({ nav, travel, onBack }) {
   const formatDate = (dateString) => {
@@ -134,22 +136,19 @@ export default function TravelDetail({ nav, travel, onBack }) {
   );
 }
 
-function getDaysWord(days) {
-  const lastDigit = days % 10;
-  const lastTwoDigits = days % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return "дней";
-  }
-
-  switch (lastDigit) {
-    case 1:
-      return "день";
-    case 2:
-    case 3:
-    case 4:
-      return "дня";
-    default:
-      return "дней";
-  }
-}
+TravelDetail.propTypes = {
+  nav: PropTypes.string.isRequired,
+  travel: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    hotelName: PropTypes.string,
+    city: PropTypes.string,
+    country: PropTypes.string,
+    startDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    endDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    description: PropTypes.string,
+    review: PropTypes.string,
+    image: PropTypes.string,
+  }),
+  onBack: PropTypes.func.isRequired,
+};

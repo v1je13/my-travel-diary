@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
@@ -25,8 +26,10 @@ import {
   Icon24Share,
   Icon24Send,
 } from "@vkontakte/icons";
-import { likePost, addComment, getPostComments } from "../api";
+import { likePost, addComment, getPostComments } from "../services/api";
 import { getCurrentUser } from "../components/StoriesBar";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { STORAGE_KEYS } from "../constants/app";
 import vkBridge from "@vkontakte/vk-bridge";
 
 export default function PostDetail({ nav, post, onBack }) {
@@ -36,16 +39,11 @@ export default function PostDetail({ nav, post, onBack }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // Check if user already liked this post - moved to useState initializer
+  // Используем кастомный хук для likedPosts
+  const [likedPosts, setLikedPosts] = useLocalStorage(STORAGE_KEYS.LIKED_POSTS, []);
+
   const [liked, setLiked] = useState(() => {
-    try {
-      const likedPosts = JSON.parse(
-        localStorage.getItem("travelDiaryLikedPosts") || "[]",
-      );
-      return likedPosts.includes(post?.id);
-    } catch {
-      return false;
-    }
+    return likedPosts.includes(post?.id);
   });
 
   // Load comments on mount
@@ -81,9 +79,6 @@ export default function PostDetail({ nav, post, onBack }) {
   const handleLike = async () => {
     const user = getCurrentUser();
     const willLike = !liked;
-    const likedPosts = JSON.parse(
-      localStorage.getItem("travelDiaryLikedPosts") || "[]",
-    );
 
     try {
       const result = await likePost(post.id, user.id);
@@ -95,16 +90,17 @@ export default function PostDetail({ nav, post, onBack }) {
       console.error("Like failed:", e);
     }
 
-    // Persist liked state
+    // Persist liked state using custom hook
     if (willLike) {
-      if (!likedPosts.includes(post.id)) {
-        likedPosts.push(post.id);
-      }
+      setLikedPosts(prev => {
+        if (!prev.includes(post.id)) {
+          return [...prev, post.id];
+        }
+        return prev;
+      });
     } else {
-      const idx = likedPosts.indexOf(post.id);
-      if (idx >= 0) likedPosts.splice(idx, 1);
+      setLikedPosts(prev => prev.filter(id => id !== post.id));
     }
-    localStorage.setItem("travelDiaryLikedPosts", JSON.stringify(likedPosts));
     setLiked(willLike);
   };
 
@@ -440,3 +436,24 @@ export default function PostDetail({ nav, post, onBack }) {
     </Panel>
   );
 }
+
+PostDetail.propTypes = {
+  nav: PropTypes.string.isRequired,
+  post: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    author: PropTypes.string,
+    avatar: PropTypes.string,
+    title: PropTypes.string,
+    text: PropTypes.string,
+    image: PropTypes.string,
+    video: PropTypes.string,
+    likes: PropTypes.number,
+    comments: PropTypes.number,
+    hotel: PropTypes.shape({
+      name: PropTypes.string,
+      city: PropTypes.string,
+    }),
+    location: PropTypes.string,
+  }),
+  onBack: PropTypes.func.isRequired,
+};

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
@@ -16,14 +17,12 @@ import {
 } from "@vkontakte/vkui";
 import { useVKUser } from "../hooks/useVKUser";
 import { getCurrentUser, setCurrentUserNames } from "../components/StoriesBar";
-import TravelCard from "../components/TravelCard";
 
-export default function Profile({ nav, onOpenTravel }) {
+export default function Profile({ nav }) {
   const { user, loading: userLoading, error } = useVKUser();
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const travels = [];
   const stats = { total: 0, countries: 0, days: 0 };
 
   useEffect(() => {
@@ -172,24 +171,10 @@ export default function Profile({ nav, onOpenTravel }) {
           👍 Мои отзывы
         </SimpleCell>
       </Group>
-
-      <Group header={<Header mode="secondary">Мои путешествия</Header>}>
-        <Div>
-          {travels.length === 0 ? (
-            <Placeholder header="Нет путешествий">
-              Добавьте своё первое путешествие!
-            </Placeholder>
-          ) : (
-            travels.map((travel) => (
-              <TravelCard
-                key={travel.id}
-                travel={travel}
-                onClick={() => onOpenTravel(travel)}
-              />
-            ))
-          )}
-        </Div>
-      </Group>
     </Panel>
   );
 }
+
+Profile.propTypes = {
+  nav: PropTypes.string.isRequired,
+};

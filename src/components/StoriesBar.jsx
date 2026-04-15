@@ -1,100 +1,32 @@
-import React, { useRef, useMemo } from "react";
+import React, { useMemo, useRef } from "react";
+import PropTypes from "prop-types";
+import { getGradientColor, GRADIENT_COLORS, STORAGE_KEYS } from "../constants/app";
+import { useLocalStorageSet } from "../hooks/useLocalStorage";
 import "../styles/vkStories.css";
 
-const GRADIENT_COLORS = [
-  "linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)",
-  "linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)",
-  "linear-gradient(135deg, #00c6ff, #0072ff, #0052d4)",
-  "linear-gradient(135deg, #11998e, #38ef7d)",
-  "linear-gradient(135deg, #fc5c7d, #6a82fb)",
-];
-
-function getGradientColor(id) {
-  const num =
-    typeof id === "string"
-      ? id.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
-      : id;
-  return GRADIENT_COLORS[num % GRADIENT_COLORS.length];
-}
-
-const FIRST_NAMES = [
-  "Александр",
-  "Мария",
-  "Дмитрий",
-  "Елена",
-  "Сергей",
-  "Анна",
-  "Алексей",
-  "Ольга",
-  "Михаил",
-  "Наталья",
-  "Андрей",
-  "Екатерина",
-  "Иван",
-  "Татьяна",
-  "Николай",
-  "Ирина",
-  "Павел",
-  "Светлана",
-  "Владимир",
-  "Юлия",
-  "Денис",
-  "Виктория",
-  "Роман",
-  "Полина",
-];
-const LAST_NAMES = [
-  "Иванов",
-  "Петров",
-  "Сидоров",
-  "Козлов",
-  "Смирнов",
-  "Кузнецов",
-  "Попов",
-  "Васильев",
-  "Новиков",
-  "Морозов",
-  "Волков",
-  "Соколов",
-  "Лебедев",
-  "Семёнов",
-  "Егоров",
-  "Павлов",
-  "Козлов",
-  "Степанов",
-  "Николаев",
-  "Орлов",
-  "Андреев",
-  "Макаров",
-  "Никитин",
-  "Захаров",
-];
-
-function generateRandomName() {
-  const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-  const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
-  const num = Math.floor(Math.random() * 100);
-  return {
-    firstName: first,
-    lastName: last,
-    displayName: `${first} ${last} #${num}`,
-  };
-}
-
 export function getCurrentUser() {
-  let user = localStorage.getItem("travelDiaryCurrentUser");
-  if (!user) {
-    // По умолчанию используем просто "Вы" без случайных имён
-    const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    user = JSON.stringify({
-      id,
+  try {
+    let user = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    if (!user) {
+      const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      user = JSON.stringify({
+        id,
+        firstName: "Вы",
+        lastName: "",
+        displayName: "Вы",
+      });
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, user);
+    }
+    return JSON.parse(user);
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return {
+      id: `user_${Date.now()}`,
       firstName: "Вы",
       lastName: "",
       displayName: "Вы",
-    });
-    localStorage.setItem("travelDiaryCurrentUser", user);
+    };
   }
-  return JSON.parse(user);
 }
 
 export function initUserFromVK(vkUser) {
@@ -102,7 +34,6 @@ export function initUserFromVK(vkUser) {
 
   const current = getCurrentUser();
 
-  // Обновляем имя только если сейчас используется "Вы" или случайное имя
   if (current.displayName === "Вы" || current.displayName.includes("#")) {
     const updated = {
       ...current,
@@ -110,7 +41,7 @@ export function initUserFromVK(vkUser) {
       lastName: vkUser.last_name || "",
       displayName: `${vkUser.first_name} ${vkUser.last_name || ""}`,
     };
-    localStorage.setItem("travelDiaryCurrentUser", JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updated));
     return updated;
   }
 
@@ -125,9 +56,9 @@ export function setCurrentUserNames(firstName, lastName) {
     lastName,
     displayName: `${firstName} ${lastName}`,
   };
-  localStorage.setItem("travelDiaryCurrentUser", JSON.stringify(updated));
+  localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updated));
   return updated;
-}
+};
 
 export default React.memo(function StoriesBar({
   stories = [],
@@ -284,3 +215,12 @@ export default React.memo(function StoriesBar({
     </div>
   );
 });
+
+StoriesBar.propTypes = {
+  stories: PropTypes.arrayOf(PropTypes.object),
+  myStories: PropTypes.arrayOf(PropTypes.object),
+  onCreateStory: PropTypes.func,
+  onViewStory: PropTypes.func,
+  viewedStories: PropTypes.instanceOf(Set),
+  currentUser: PropTypes.object,
+};

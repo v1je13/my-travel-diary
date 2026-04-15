@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import PropTypes from "prop-types";
 import vkBridge from "@vkontakte/vk-bridge";
 import {
   Panel,
@@ -17,25 +18,17 @@ import {
   Div,
   PullToRefresh,
 } from "@vkontakte/vkui";
-import { Icon20Add, Icon24Camera } from "@vkontakte/icons";
+import { Icon20Add } from "@vkontakte/icons";
 import StoriesBar, {
   getCurrentUser,
   initUserFromVK,
 } from "../components/StoriesBar";
-import { getPosts, getStories, savePost, searchPosts } from "../api";
+import { getPosts, getStories, searchPosts } from "../services/api";
 import { useVKUser } from "../hooks/useVKUser";
+import { useLocalStorageSet } from "../hooks/useLocalStorage";
+import { useDebounce } from "../hooks/useDebounce";
+import { APP_CONFIG, STORAGE_KEYS } from "../constants/app";
 import "../styles/vkStories.css";
-
-const currentUser = getCurrentUser();
-
-// Debounce функция для поиска
-function debounce(fn, delay) {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-}
 
 export default function Feed({
   nav,
@@ -47,37 +40,29 @@ export default function Feed({
 }) {
   const vkUser = useVKUser();
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
-
-  // Sync VK user name
-  useEffect(() => {
-    if (vkUser.user?.first_name) {
-      const updated = initUserFromVK(vkUser.user);
-      setCurrentUser(updated);
-    }
-  }, [vkUser.user]);
-
   const [feedPosts, setFeedPosts] = useState([]);
   const [myStories, setMyStories] = useState([]);
-  const [viewedStories, setViewedStories] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const isMountedRef = useRef(true);
 
+  // Используем кастомный хук для viewedStories
+  const [viewedStories, addToViewed, removeFromViewed] = useLocalStorageSet(STORAGE_KEYS.VIEWED_STORIES);
+
   const loadData = async () => {
     if (!isMountedRef.current) return;
 
-    const stories = await getStories();
-    const posts = await getPosts();
-    const viewed = JSON.parse(
-      localStorage.getItem("travelDiaryViewedStories") || "[]",
-    );
+    try {
+      const [stories, posts] = await Promise.all([getStories(), getPosts()]);
 
-    if (isMountedRef.current) {
-      setMyStories(stories);
-      setFeedPosts(posts);
-      setViewedStories(new Set(viewed));
+      if (isMountedRef.current) {
+        setMyStories(stories);
+        setFeedPosts(posts);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
     }
   };
 
@@ -108,59 +93,50 @@ export default function Feed({
   // Reload data periodically ONLY when page is visible
   useEffect(() => {
     const interval = setInterval(() => {
-      // Проверяем видимость страницы перед обновлением
       if (document.visibilityState === "visible" && isMountedRef.current) {
         loadData();
       }
-    }, 60000); // Увеличили с 30 до 60 секунд
+    }, APP_CONFIG.AUTO_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Search handler with debounce
-  const debouncedSearch = useRef(
-    debounce(async (value) => {
-      if (!value.trim()) {
+  // Используем кастомный хук для debounce
+  const debouncedSearchQuery = useDebounce(searchQuery, APP_CONFIG.DEBOUNCE_DELAY);
+
+  // Search handler
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedSearchQuery.trim()) {
         setSearchResults([]);
         setIsSearching(false);
         return;
       }
 
       setIsSearching(true);
-      const isNumeric = /^\d+$/.test(value.trim());
-      const results = await searchPosts(value, isNumeric ? value : null);
+      try {
+        const isNumeric = /^\d+$/.test(debouncedSearchQuery.trim());
+        const results = await searchPosts(debouncedSearchQuery, isNumeric ? debouncedSearchQuery : null);
 
-      if (isMountedRef.current) {
-        setSearchResults(results);
+        if (isMountedRef.current) {
+          setSearchResults(results);
+          setIsSearching(false);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
         setIsSearching(false);
       }
-    }, 300),
-  ).current;
+    };
 
-  const handleSearch = useCallback(
-    (e) => {
-      const value = e.target.value;
-      setSearchQuery(value);
-
-      if (!value.trim()) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-
-      setIsSearching(true);
-      debouncedSearch(value);
-    },
-    [debouncedSearch],
-  );
+    performSearch();
+  }, [debouncedSearchQuery]);
 
   // Filter posts when searching locally
-  const displayPosts =
-    searchQuery && !searchResults.length
-      ? []
-      : searchQuery && searchResults.length > 0
-        ? searchResults
-        : feedPosts;
+  const displayPosts = useMemo(() => {
+    if (searchQuery && !searchResults.length) return [];
+    if (searchQuery && searchResults.length > 0) return searchResults;
+    return feedPosts;
+  }, [searchQuery, searchResults, feedPosts]);
 
   return (
     <Panel nav={nav} style={{ background: "#f5f0e8" }}>
@@ -199,7 +175,7 @@ export default function Feed({
         {/* Search Bar */}
         <Search
           value={searchQuery}
-          onChange={handleSearch}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Поиск по ID или тексту..."
         />
 
@@ -322,3 +298,12 @@ export default function Feed({
     </Panel>
   );
 }
+
+Feed.propTypes = {
+  nav: PropTypes.string.isRequired,
+  onOpenPost: PropTypes.func,
+  onCreateStory: PropTypes.func,
+  onViewStory: PropTypes.func,
+  onEditStory: PropTypes.func,
+  onOpenCreatePost: PropTypes.func,
+};

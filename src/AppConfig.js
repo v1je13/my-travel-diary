@@ -7,11 +7,9 @@ import {
   useInsets,
 } from "@vkontakte/vk-bridge-react";
 import { AdaptivityProvider, ConfigProvider, AppRoot } from "@vkontakte/vkui";
-import { RouterProvider } from "@vkontakte/vk-mini-apps-router";
 import "@vkontakte/vkui/dist/vkui.css";
 
-import { transformVKBridgeAdaptivity } from "./utils";
-import { router } from "./routes";
+import { transformVKBridgeAdaptivity } from "./utils/transformVKBridgeAdaptivity";
 import App from "./App.jsx";
 
 export const AppConfig = () => {
@@ -36,9 +34,7 @@ export const AppConfig = () => {
           safeAreaInsets={vkBridgeInsets}
           style={{ background: "#f5f0e8" }}
         >
-          <RouterProvider router={router}>
-            <App />
-          </RouterProvider>
+          <App />
         </AppRoot>
       </AdaptivityProvider>
     </ConfigProvider>

@@ -11,50 +11,12 @@ import {
   Alert,
 } from "@vkontakte/vkui";
 import vkBridge from "@vkontakte/vk-bridge";
-import { saveStory, savePost } from "../api";
+import { saveStory, savePost } from "../services/api";
 import { getCurrentUser } from "../components/StoriesBar";
+import { STORY_COLORS, FONT_SIZES, STICKERS } from "../constants/app";
 import "../styles/vkStories.css";
 
 const currentUser = getCurrentUser();
-
-const COLORS = [
-  "#ffffff",
-  "#ff3b30",
-  "#ff9500",
-  "#ffcc00",
-  "#4cd964",
-  "#007aff",
-  "#5856d6",
-  "#ff2d55",
-  "#000000",
-];
-const FONT_SIZES = [16, 20, 24, 32, 40, 48];
-const STICKERS = [
-  "😀",
-  "😍",
-  "🥳",
-  "😎",
-  "🤩",
-  "",
-  "🔥",
-  "❤️",
-  "💯",
-  "👍",
-  "🙌",
-  "🎉",
-  "✨",
-  "🌟",
-  "",
-  "🎈",
-  "📍",
-  "✈️",
-  "🌍",
-  "🏖️",
-  "🗺️",
-  "📸",
-  "🎬",
-  "🎵",
-];
 
 export default function StoryCreatorVK({
   nav,
@@ -594,7 +556,7 @@ export default function StoryCreatorVK({
         {(activeTool === "text" || activeTool === "draw") &&
           showColorPicker && (
             <div className="vk-story-color-picker">
-              {COLORS.map((color) => (
+              {STORY_COLORS.map((color) => (
                 <div
                   key={color}
                   className={`vk-story-color-option ${textColor === color ? "selected" : ""}`}

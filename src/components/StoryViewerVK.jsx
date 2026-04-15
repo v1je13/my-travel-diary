@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import PropTypes from "prop-types";
 import { Panel, PanelHeader, Button } from "@vkontakte/vkui";
-import { deleteStory } from "../api";
+import { deleteStory } from "../services/api";
 import { getCurrentUser } from "../components/StoriesBar";
+import { APP_CONFIG, REACTION_EMOJIS } from "../constants/app";
 import "../styles/vkStories.css";
 
 const currentUser = getCurrentUser();
-
-const PHOTO_DURATION = 5000;
-const REACTION_EMOJIS = ["❤️", "😂", "😮", "🔥", "👍", ""];
 
 function formatTimestamp(timestamp) {
   const now = new Date();
@@ -83,7 +82,7 @@ export default function StoryViewer({
   useEffect(() => {
     if (isPaused || !currentStory || currentStory.type === "video") return;
     setProgress(0);
-    const increment = 100 / (PHOTO_DURATION / 100);
+    const increment = 100 / (APP_CONFIG.STORY_PHOTO_DURATION / 100);
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -456,6 +455,30 @@ export default function StoryViewer({
           onClick={() => handleTap("right")}
         />
       </div>
-    </Panel>
-  );
+      </Panel>
+    );
 }
+
+StoryViewerVK.propTypes = {
+  nav: PropTypes.string.isRequired,
+  stories: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      image: PropTypes.string,
+      video: PropTypes.string,
+      text: PropTypes.string,
+      textColor: PropTypes.string,
+      fontSize: PropTypes.number,
+      stickers: PropTypes.array,
+      timestamp: PropTypes.number.isRequired,
+      type: PropTypes.oneOf(['photo', 'video']).isRequired,
+      authorName: PropTypes.string.isRequired,
+      authorId: PropTypes.string.isRequired,
+      authorAvatar: PropTypes.string,
+    })
+  ).isRequired,
+  initialIndex: PropTypes.number,
+  authorId: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+  onEdit: PropTypes.func,
+};

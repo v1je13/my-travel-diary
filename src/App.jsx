@@ -18,7 +18,8 @@ import PostDetail from "./panels/PostDetail";
 import StoryCreatorVK from "./panels/StoryCreatorVK";
 import StoryViewerVK from "./components/StoryViewerVK";
 import CreatePostModal from "./components/CreatePostModal";
-import { deleteStory } from "./api";
+import { deleteStory } from "./services/api";
+import { AppProvider, useApp } from "./context/AppContext";
 
 const MapIcon = () => (
   <svg
@@ -108,108 +109,67 @@ const UserIcon = () => (
   </svg>
 );
 
-export default function App() {
+function AppContent() {
   const [activeStory, setActiveStory] = useState("feed");
   const [activePanel, setActivePanel] = useState({
     feed: "feed",
     search: "search",
     profile: "profile",
   });
-  const [selectedTravel, setSelectedTravel] = useState(null);
-  const [selectedPost, setSelectedPost] = useState(null);
   const [editingStory, setEditingStory] = useState(null);
-  const [viewingStories, setViewingStories] = useState(null);
-  const [viewingIndex, setViewingIndex] = useState(0);
   const [viewingUserGroup, setViewingUserGroup] = useState(null);
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
-  const [addToExistingMode, setAddToExistingMode] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
 
-  const handleOpenTravel = (travel) => {
-    setSelectedTravel(travel);
-    setActivePanel((prev) => ({ ...prev, profile: "travelDetail" }));
-  };
+  const {
+    selectedTravel,
+    selectedPost,
+    activeStory: contextActiveStory,
+    activeStory: contextActivePanel,
+    openTravel,
+    closeTravel,
+    openPost,
+    closePost,
+    openStoryCreator,
+    closeStoryCreator,
+    openStoryViewer,
+    closeStoryViewer,
+    openCreatePost,
+    closeCreatePost,
+  } = useApp();
 
   const handleBackToProfile = () => {
-    setSelectedTravel(null);
-    setActivePanel((prev) => ({ ...prev, profile: "profile" }));
-  };
-
-  const handleOpenPost = (post) => {
-    setSelectedPost(post);
-    setActivePanel((prev) => ({ ...prev, feed: "postDetail" }));
+    closeTravel();
   };
 
   const handleBackToFeed = () => {
-    setSelectedPost(null);
-    setActivePanel((prev) => ({ ...prev, feed: "feed" }));
+    closePost();
   };
 
   // Story handlers
   const handleCreateStory = (addToExisting = false) => {
-    setAddToExistingMode(addToExisting);
+    openStoryCreator(addToExisting);
     setEditingStory(null);
-    setActivePanel((prev) => ({ ...prev, feed: "storyCreator" }));
   };
 
   const handleViewStory = (stories, index, userGroup = null) => {
-    setViewingStories(stories);
-    setViewingIndex(index);
     setViewingUserGroup(userGroup);
-    setActivePanel((prev) => ({ ...prev, feed: "storyViewer" }));
+    openStoryViewer(stories, index, userGroup);
   };
 
   const handleEditStory = (story) => {
     setEditingStory(story);
-    setActivePanel((prev) => ({ ...prev, feed: "storyCreator" }));
+    openStoryCreator(false);
   };
 
   const handleBackFromStoryCreator = () => {
     setEditingStory(null);
-    setAddToExistingMode(false);
-    setActivePanel((prev) => ({ ...prev, feed: "feed" }));
+    closeStoryCreator();
   };
 
   const handleBackFromStoryViewer = () => {
-    setViewingStories(null);
     setViewingUserGroup(null);
-    setActivePanel((prev) => ({ ...prev, feed: "feed" }));
-  };
-
-  const handleNextUserStory = () => {
-    // Navigate to next user's stories
-    const allStories = JSON.parse(
-      localStorage.getItem("travelDiaryStories") || "[]",
-    );
-    // Logic to find and navigate to next user's stories
-    handleBackFromStoryViewer();
-  };
-
-  const handlePrevUserStory = () => {
-    // Navigate to previous user's stories
-    if (viewingIndex > 0) {
-      setViewingIndex(0);
-    } else {
-      handleBackFromStoryViewer();
-    }
-  };
-
-  const handleMarkStoryViewed = (storyIndex) => {
-    const viewed = JSON.parse(
-      localStorage.getItem("travelDiaryViewedStories") || "[]",
-    );
-    if (viewingUserGroup) {
-      viewed.push(`${viewingUserGroup}-${storyIndex}`);
-    }
-    localStorage.setItem(
-      "travelDiaryViewedStories",
-      JSON.stringify([...new Set(viewed)]),
-    );
-  };
-
-  const handleStoryReply = (text) => {
-    console.log("Story reply:", text);
-    // Implement reply logic here
+    closeStoryViewer();
   };
 
   const handleDeleteStory = async (storyId) => {
@@ -219,20 +179,20 @@ export default function App() {
 
   const handlePublishStory = (story) => {
     setFeedRefreshKey((k) => k + 1);
-    setActivePanel((prev) => ({ ...prev, feed: "feed" }));
+    closeStoryCreator();
   };
 
   const handlePublishToFeed = (post) => {
     setFeedRefreshKey((k) => k + 1);
-    setActivePanel((prev) => ({ ...prev, feed: "feed" }));
+    closeCreatePost();
   };
 
   const handleOpenCreatePost = () => {
-    setShowCreatePost(true);
+    openCreatePost();
   };
 
   const handleCloseCreatePost = () => {
-    setShowCreatePost(false);
+    closeCreatePost();
   };
 
   const handlePostPublished = (savedPost) => {
@@ -341,5 +301,13 @@ export default function App() {
         </AppRoot>
       </AdaptivityProvider>
     </ConfigProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
