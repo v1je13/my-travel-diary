@@ -1,156 +1,123 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
   Panel,
   PanelHeader,
-  Search as VKSearch,
+  Search as VKUISearch,
   Group,
-  Placeholder,
   Div,
-  Card,
-  Text,
   Title,
+  Text,
+  Card,
   Avatar,
+  Placeholder,
+  Spinner,
 } from "@vkontakte/vkui";
-import { searchPosts } from "../services/api";
-import Loader from "../components/Loader";
+import { searchPosts, getPosts } from "../services/api";
 import { useDebounce } from "../hooks/useDebounce";
-import { APP_CONFIG } from "../constants/app";
 
-export default function SearchPanel({ nav, onOpenPost }) {
-  const [query, setQuery] = useState("");
+export default function Search({ nav, onOpenPost }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Используем кастомный хук для debounce
-  const debouncedQuery = useDebounce(query, APP_CONFIG.DEBOUNCE_DELAY);
+  const debouncedSearch = useCallback(
+    useDebounce(async (query) => {
+      if (query.trim()) {
+        setLoading(true);
+        try {
+          const results = await searchPosts(query);
+          setPosts(results || []);
+          setHasSearched(true);
+        } catch (error) {
+          console.error("Search failed:", error);
+          setPosts([]);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setPosts([]);
+        setHasSearched(false);
+      }
+    }, 500),
+    []
+  );
 
-  // Выполняем поиск при изменении debouncedQuery
   useEffect(() => {
-    const performSearch = async () => {
-      if (!debouncedQuery.trim()) {
-        setResults([]);
-        setLoading(false);
-        return;
-      }
+    debouncedSearch(searchQuery);
+  }, [searchQuery, debouncedSearch]);
 
-      setLoading(true);
-      try {
-        const isNumeric = /^\d+$/.test(debouncedQuery.trim());
-        const found = await searchPosts(debouncedQuery, isNumeric ? debouncedQuery : null);
-        setResults(found);
-      } catch (error) {
-        console.error('Search error:', error);
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    performSearch();
-  }, [debouncedQuery]);
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   return (
-    <Panel nav={nav} style={{ background: "#f5f0e8" }}>
+    <Panel nav={nav}>
       <PanelHeader>Поиск</PanelHeader>
-      <Group>
-        <VKSearch
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Введите ID поста или текст..."
+      <Div>
+        <VKUISearch
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Поиск по постам..."
         />
-      </Group>
+      </Div>
 
-      {loading && <Loader />}
-
-      {!loading && query && results.length === 0 && (
-        <Placeholder header="Ничего не найдено">
-          🔍 Попробуйте изменить запрос или проверьте ID
-        </Placeholder>
-      )}
-
-      {!loading && !query && (
-        <Placeholder header="Поиск постов">
-          🔍 Введите ID поста для поиска или текст
-        </Placeholder>
-      )}
-
-      {!loading && results.length > 0 && (
+      {loading ? (
         <Group>
-          <Div>
-            <Text
-              style={{
-                marginBottom: 12,
-                color: "var(--vkui--color_text_secondary)",
-              }}
-            >
-              Найдено: {results.length}
-            </Text>
-            {results.map((post) => (
+          <Div style={{ textAlign: "center" }}>
+            <Spinner size="large" />
+          </Div>
+        </Group>
+      ) : hasSearched ? (
+        posts.length === 0 ? (
+          <Group>
+            <Placeholder>Ничего не найдено</Placeholder>
+          </Group>
+        ) : (
+          <Group>
+            {posts.map((post) => (
               <Card
                 key={post.id}
                 mode="shadow"
-                style={{ marginBottom: 12, cursor: "pointer" }}
-                onClick={() => onOpenPost?.(post)}
+                style={{ marginBottom: 12 }}
+                onClick={() => onOpenPost && onOpenPost(post)}
               >
-                <div style={{ padding: 16 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Avatar size={48} src={post.avatar} />
-                    <div style={{ marginLeft: 12, flex: 1 }}>
-                      <Title level="3" style={{ marginBottom: 4 }}>
-                        {post.author}
+                <Div>
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+                    <Avatar size={40} src={post.avatar || "https://vk.com/images/camera_100.png"} />
+                    <div style={{ marginLeft: 12 }}>
+                      <Title level="3" style={{ fontSize: 16 }}>
+                        {post.author || "Пользователь"}
                       </Title>
-                      <Text
-                        style={{
-                          color: "var(--vkui--color_text_secondary)",
-                          fontSize: 12,
-                        }}
-                      >
-                        #{post.id} • {post.date}
+                      <Text style={{ fontSize: 12, color: "var(--vkui--color_text_secondary)" }}>
+                        {post.date || "только что"}
                       </Text>
                     </div>
                   </div>
-                  {post.text && (
-                    <Text style={{ marginBottom: 8, lineHeight: 1.4 }}>
-                      {post.text.slice(0, 100)}...
-                    </Text>
-                  )}
-                  {post.image && !post.video && (
+                  <Text style={{ marginBottom: 12 }}>{post.text || ""}</Text>
+                  {post.image && (
                     <img
                       src={post.image}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        borderRadius: 8,
-                        maxHeight: 200,
-                        objectFit: "cover",
-                        marginBottom: 8,
-                      }}
+                      alt="Post"
+                      style={{ borderRadius: 8, maxWidth: "100%", marginBottom: 12 }}
                     />
                   )}
-                  <div style={{ display: "flex", gap: 16 }}>
-                    <Text style={{ fontSize: 12 }}>❤️ {post.likes || 0}</Text>
-                    <Text style={{ fontSize: 12 }}>
-                      💬 {post.comments || 0}
-                    </Text>
-                  </div>
-                </div>
+                </Div>
               </Card>
             ))}
-          </Div>
+          </Group>
+        )
+      ) : (
+        <Group>
+          <Placeholder>Введите поисковый запрос</Placeholder>
         </Group>
       )}
     </Panel>
   );
 }
 
-SearchPanel.propTypes = {
+Search.propTypes = {
   nav: PropTypes.string.isRequired,
   onOpenPost: PropTypes.func,
 };

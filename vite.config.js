@@ -36,7 +36,7 @@ function threatJsFilesAsJsx() {
  * The details are here: https://dev.vk.ru/mini-apps/development/on-demand-resources.
  */
 export default defineConfig({
-  base: "./",
+  base: "/TravelDiary/",
 
   plugins: [
     react(),
@@ -47,7 +47,6 @@ export default defineConfig({
     }),
   ],
 
-  // ДОБАВЬТЕ ЭТУ СЕКЦИЮ:
   server: {
     port: 5173, // ← ДОБАВЬТЕ ЭТУ СТРОКУ (любой свободный порт)
     allowedHosts: [

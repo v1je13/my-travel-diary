@@ -1,8 +1,7 @@
 import React from "react";
-import PropTypes from "prop-types";
 import { Card, Text, Title, Avatar, Button, Div } from "@vkontakte/vkui";
 
-export default React.memo(function PostCard({ post, onLike, onComment, onShare }) {
+export default function PostCard({ post, onLike, onComment, onShare }) {
   if (!post) return null;
 
   const getCategoryIcon = () => {
@@ -147,6 +146,7 @@ export default React.memo(function PostCard({ post, onLike, onComment, onShare }
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log("Открыть фото", idx);
                   }}
                 />
               ))}
@@ -163,6 +163,7 @@ export default React.memo(function PostCard({ post, onLike, onComment, onShare }
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  console.log("Открыть все фото");
                 }}>
                   <Text style={{ textAlign: "center" }}>
                     +{post.images.length - 2} фото
@@ -212,35 +213,4 @@ export default React.memo(function PostCard({ post, onLike, onComment, onShare }
       </Card>
     </div>
   );
-});
-
-PostCard.propTypes = {
-  post: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    author: PropTypes.string,
-    avatar: PropTypes.string,
-    date: PropTypes.string,
-    title: PropTypes.string,
-    text: PropTypes.string,
-    image: PropTypes.string,
-    video: PropTypes.string,
-    type: PropTypes.oneOf(['photo', 'video', 'text']),
-    likes: PropTypes.number,
-    comments: PropTypes.number,
-    reposts: PropTypes.number,
-    category: PropTypes.oneOf(['hotels', 'mountains', 'beaches', 'travel']),
-    hotel: PropTypes.shape({
-      name: PropTypes.string,
-      city: PropTypes.string,
-      rating: PropTypes.number,
-      price: PropTypes.string,
-    }),
-    location: PropTypes.string,
-    difficulty: PropTypes.oneOf(['легкий', 'средний', 'сложный']),
-    duration: PropTypes.string,
-    images: PropTypes.arrayOf(PropTypes.string),
-  }),
-  onLike: PropTypes.func,
-  onComment: PropTypes.func,
-  onShare: PropTypes.func,
-};
+}
