@@ -41,27 +41,34 @@ export function useLocalStorageSet(key) {
     }
   });
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify([...set]));
-    } catch (error) {
-      console.error(`Error setting localStorage Set "${key}":`, error);
-    }
-  }, [key, set]);
-
   const addToSet = useCallback((item) => {
-    setSet(prev => new Set([...prev, item]));
-  }, []);
+    setSet(prev => {
+      const newSet = new Set([...prev, item]);
+      try {
+        window.localStorage.setItem(key, JSON.stringify([...newSet]));
+      } catch (error) {
+        console.error(`Error setting localStorage Set "${key}":`, error);
+      }
+      return newSet;
+    });
+  }, [key]);
 
   const removeFromSet = useCallback((item) => {
     setSet(prev => {
       const newSet = new Set(prev);
       newSet.delete(item);
+      try {
+        window.localStorage.setItem(key, JSON.stringify([...newSet]));
+      } catch (error) {
+        console.error(`Error setting localStorage Set "${key}":`, error);
+      }
       return newSet;
     });
-  }, []);
+  }, [key]);
 
-  const hasInSet = useCallback((item) => set.has(item), [set]);
+  const hasInSet = useCallback((item) => {
+    return set.has(item);
+  }, [set]);
 
   return [set, addToSet, removeFromSet, hasInSet];
 }

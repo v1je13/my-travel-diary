@@ -43,10 +43,9 @@ export default function Feed({
   const [stories, setStories] = useState([]);
   const [myStories, setMyStories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewedStoriesSet, addToViewed, removeFromViewed, hasViewed] = useLocalStorageSet(
+  const [viewedStories, addToViewed, removeFromViewed, hasViewed] = useLocalStorageSet(
     STORAGE_KEYS.VIEWED_STORIES
   );
-  const viewedStories = Array.from(viewedStoriesSet);
   const [refreshing, setRefreshing] = useState(false);
   const currentUser = getCurrentUser();
   const vkUser = useVKUser();
