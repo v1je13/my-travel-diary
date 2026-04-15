@@ -118,6 +118,8 @@ function AppContent() {
   });
   const [editingStory, setEditingStory] = useState(null);
   const [viewingUserGroup, setViewingUserGroup] = useState(null);
+  const [viewingStories, setViewingStories] = useState(null);
+  const [viewingIndex, setViewingIndex] = useState(0);
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [showCreatePost, setShowCreatePost] = useState(false);
 
@@ -154,6 +156,8 @@ function AppContent() {
 
   const handleViewStory = (stories, index, userGroup = null) => {
     setViewingUserGroup(userGroup);
+    setViewingStories(stories);
+    setViewingIndex(index);
     openStoryViewer(stories, index, userGroup);
   };
 
@@ -199,6 +203,32 @@ function AppContent() {
     setFeedRefreshKey((k) => k + 1);
     setShowCreatePost(false);
   };
+
+  const handleOpenPost = (post) => {
+    openPost(post);
+  };
+
+  const handleOpenTravel = (travel) => {
+    openTravel(travel);
+  };
+
+  const handleNextUserStory = () => {
+    setViewingUserGroup(null);
+  };
+
+  const handlePrevUserStory = () => {
+    setViewingUserGroup(null);
+  };
+
+  const handleStoryReply = (reply) => {
+    console.log('Story reply:', reply);
+  };
+
+  const handleMarkStoryViewed = (index) => {
+    console.log('Story viewed at index:', index);
+  };
+
+  const addToExistingMode = editingStory !== null;
 
   return (
     <ConfigProvider>
