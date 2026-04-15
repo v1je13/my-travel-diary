@@ -19,10 +19,8 @@ import {
   PullToRefresh,
 } from "@vkontakte/vkui";
 import { Icon20Add } from "@vkontakte/icons";
-import StoriesBar, {
-  getCurrentUser,
-  initUserFromVK,
-} from "../components/StoriesBar";
+import StoriesBar from "../components/StoriesBar";
+import { getCurrentUser, initUserFromVK } from "../components/StoriesBar";
 import { getPosts, getStories, searchPosts } from "../services/api";
 import { useVKUser } from "../hooks/useVKUser";
 import { useLocalStorageSet } from "../hooks/useLocalStorage";
